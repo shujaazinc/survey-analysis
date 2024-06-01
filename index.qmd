@@ -14,7 +14,7 @@ format:
             <img src="images/logo.png" alt="Logo" style="width: 150px; margin-left: 20px;"/>
           </div>
           <div style="float: left; width: 60%; text-align: center;">
-            <h1> Insights from Annual Survey </h1>
+            <h1> Annual Survey Insights Portal </h1>
           </div>
           <div style="float: right; width: 20%; text-align: right;">
             <p style="margin-right: 20px; margin-top: 20px; font-size: 1.2em;">Shujaaz K&L</p>
@@ -1201,7 +1201,7 @@ fmt_number(
   opt_table_font(
     font = "Arial"
   ) |>
-tab_options(table.width = pct(100))
+tab_options(table.width = pct(100), row.p)
 }
 
 ```
