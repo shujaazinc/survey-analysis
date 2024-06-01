@@ -504,15 +504,13 @@ unweighted_summary_table <- survey_data %>%
 
 # Demographic Characteristics
 
-This section provides an overview of repondent key attributes including information such as age, gender, education level, and geographic location. It provides insights into the distribution of the survey participants across different age groups and gender categories, highlighting the diversity within the population. 
-
 ```{r}
 #| echo: false
 unweighted_summary_table
 ```
 
 
-The total sample size is 2002. Age distribution shows that among the female respondents, 54% are aged 15-19, and 46% are aged 20-24. For male respondents, 53% fall within the 15-19 age group, while 47% are aged 20-24. In terms of location, 61% of the respondents reside in rural areas, with 60% of the females and 62% of the males living rurally. Conversely, 39% live in urban areas, with an urban distribution of 40% among females and 38% among males. Educational attainment varies, with 7.7% of the respondents having incomplete primary education (7.9% females and 7.6% males). Those who completed primary education constitute 48% of the respondents, split into 45% females and 51% males. A significant portion, 35%, have completed secondary education, with 37% females and 33% males. Finally, 9.1% have education levels of secondary and above, including 10% of females and 8.2% of males. 
+The total sample size is 2002. Age distribution shows that among the female respondents, 54% are aged 15-19, and 46% are aged 20-24. In terms of location, 61% of the respondents reside in rural areas, with 60% of the females and 62% of the males living rurally. Conversely, 39% live in urban areas, with an urban distribution of 40% among females and 38% among males. Educational attainment varies, with 7.7% of the respondents having incomplete primary education (7.9% females and 7.6% males).
 
 
 ```{r}
@@ -527,8 +525,6 @@ survey_design <- survey_data |>
 
 
 # Reach
-
-Reach is defined as individuals who are aware of Shujaaz brand. 
 
 ## Overall reach
 
@@ -667,15 +663,6 @@ ggplot(aes(x = persona, y = proportion,
 ```
 
 
-
-
-::: {.note}
-<span class="info-icon">ℹ️</span>
-Brand awareness across all personas was largely similar, as the differences were not statistically significant (p-value = 0.3294).
-:::
-
-
-
 ```{r}
 #| echo: false
 #| message: false
@@ -692,13 +679,31 @@ persona_awareness_test <- survey_design %>%
   )
 ```
 
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Brand awareness across all personas was largely similar, as the differences were not statistically significant (p-value = 0.3294).
+:::
 
 
 
-## Data Collection
+## Reach by location
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 
-Detail the data collection process here. Explain how the data was gathered, what tools were used, and any relevant protocols.
-
+awareness_summary_location <- survey_design %>%
+  group_by(location, awareness) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(awareness = case_when(
+    awareness == "Yes" ~ "Aware",
+    awareness == "No" ~ "Unaware",
+    TRUE ~ NA_character_
+  )) |>
+rename(Location = location) |>
+ungroup()
+```
 
 
 ```{r}
@@ -706,51 +711,551 @@ Detail the data collection process here. Explain how the data was gathered, what
 #| message: false
 #| warning: false
 
-awareness_summary_persona |>
-  ggplot(aes(x = persona, y = proportion, 
-             fill = fct_rev(awareness))) +
+# test for equality of awareness
+location_awareness_test <- survey_design %>%
+  drop_na(location, awareness) %>%
+  svychisq(
+    formula = ~ location + awareness,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 4
+
+ggplot(awareness_summary_location, aes(x=awareness, y=proportion, fill=Location)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=-0.5, position=position_dodge(0.9)) +
+  labs(title="Reach by location", x="Awareness", y="Proportion")
+
+```
+
+
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There is strong evidence to suggest that brand awareness levels vary location (p-value < 0.001).
+:::
+
+
+
+
+## Reach by county
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+awareness_summary_county <- survey_design %>%
+  group_by(county_name, awareness) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(awareness = case_when(
+    awareness == "Yes" ~ "Aware",
+    awareness == "No" ~ "Unaware",
+    TRUE ~ NA_character_
+  )) |>
+rename(County = county_name) |>
+ungroup()
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+awareness_summary_wide <- awareness_summary_county %>%
+  select(County, awareness, total) %>%
+  pivot_wider(names_from = awareness, values_from = total,values_fill = list(total = 0))
+  
+# Step 3: Calculate the `% Aware`
+awareness_table <- awareness_summary_wide %>%
+  mutate(`% Aware` = `Aware` / (`Aware` + `Unaware`)) %>%
+  select(County, `% Aware`, `Aware`, `Unaware`) |>
+  arrange(`% Aware`)
+
+# Define a function to generate the color based on the value
+color_fill <- function(x) {
+  scales::col_numeric(
+    palette = colorRampPalette(c("white", "lightblue"))(10), 
+    domain = c(0, 1)
+  )(x)
+}
+
+# Create a gt table with dynamic color fill
+create_awareness_table <- function(data) {
+data %>%
+  gt() %>%
+  # tab_header(
+  #   title = "Awareness by County"
+  # ) %>%
+  data_color(
+    columns = c(`% Aware`),
+    colors = color_fill
+  ) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+  cols_label(
+    County = "County",
+    `% Aware` = "% Aware",
+    Aware = "Aware",
+    Unaware = "Unaware"
+  ) %>%
+  fmt_percent(
+    columns = c(`% Aware`),
+    decimals = 0
+  ) %>%
+fmt_number(
+      columns = c(Aware, Unaware),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = "Arial"
+  ) |>
+tab_options(table.width = pct(100))
+}
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# test for equality of awareness
+county_awareness_test <- survey_design %>%
+  drop_na(awareness, county_name) %>%
+  svychisq(
+    formula = ~ county_name + awareness,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_awareness_table(awareness_table |> slice(1:22))
+```
+
+</div>
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_awareness_table(awareness_table |> slice(23:43))
+```
+
+</div>
+
+:::
+
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There is strong evidence that brand awareness levels vary by county (p-value < 0.001).
+:::
+
+
+# Engagement
+
+## Overall engagement 
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Awareness
+engagement_summary <- survey_design %>%
+  group_by(engagement) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(engagement = case_when(
+    engagement == "Yes" ~ "Ever engaged",
+    engagement == "No" ~ "Never enngaged",
+    TRUE ~ NA_character_
+  ))
+
+overall_engaged_total <- engagement_summary %>%
+  filter(engagement == "Ever engaged") %>%
+  pull(total)
+
+overall_engaged_prop <- engagement_summary %>%
+  filter(engagement == "Ever engaged") %>%
+  pull(proportion)
+
+
+
+engagement_summary_persona <- survey_design %>%
+  group_by(persona, engagement) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(engagement = case_when(
+    engagement == "Yes" ~ "Ever engaged",
+    engagement == "No" ~ "Never enngaged",
+    TRUE ~ NA_character_
+  ))
+
+
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 4
+#| fig-height: 2
+
+ggplot(engagement_summary, aes(x = 2, y = proportion, fill = engagement)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  theme(legend.position = "none") +
+  xlim(0.5, 2.5) +
+  geom_text(aes(label = ifelse(engagement == "Ever engaged", 
+  paste0(label_percent()(overall_engaged_prop)), "")), 
+            position = position_stack(vjust = 0.5), color = "black")+
+  scale_fill_manual(values = c("Ever engaged" = "#FA0005", "Never engaged" = "darkgray"),
+                    name = "Legend") +
+labs(
+    title = "Percentage engaged"
+  )
+```
+
+</div>
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 4
+#| fig-height: 2
+
+ggplot(engagement_summary, aes(x = 2, y = total, fill = engagement)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  theme(legend.position = "none") +
+  xlim(0.5, 2.5) +
+  geom_text(aes(label = ifelse(engagement == "Ever engaged", 
+  paste0(comma((overall_engaged_total))), "")), 
+            position = position_stack(vjust = 0.5), color = "black")+
+  scale_fill_manual(values = c("Ever engaged" = "#FA0005", "Never engaged" = "darkgray"),
+                    name = "Legend") +
+labs(
+    title = "Absolute engagement"
+  )
+```
+
+</div>
+
+:::
+
+**`r comma(overall_engaged_total)`** (**`r label_percent()(overall_engaged_prop)`**) young people have ever engaged with Shujaaz brand.
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+These results include those aware and not aware of Shujaaz brand.
+:::
+
+## Engagement by persona
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 4
+
+
+engagement_summary_persona |>
+ggplot(aes(x = persona, y = proportion, 
+             fill = fct_rev(engagement))) +
   geom_col(position = "fill", color = "white") +
   geom_text(aes(label = label_percent(accuracy=1)(proportion)), 
-            position = position_fill(vjust = 0.5), color = "white") +
+            position = position_fill(vjust = 0.5),color = "white") +  # Adjust size and color as needed
   scale_fill_manual(
     values = c("darkgrey", "#FA0005"),
     guide = guide_legend(reverse = TRUE)
   ) +
   scale_y_continuous(labels = label_percent()) +
   labs(
-    title = "Awareness by Persona",
+    title = "Engagement by Persona",
     y = NULL,
     x = NULL,
     fill = "Legend"
   ) 
 ```
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 
-There are slight differences in the proportion of youth aware of shujaaz media. Overall, Nina has the highest awareness.
+# test for equality of brand awareness
+persona_engagement_test <- survey_design %>%
+  drop_na(engagement, persona) %>%
+  svychisq(
+    formula = ~ persona + engagement,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Brand engagement across all personas was largely similar, as the differences were not statistically significant (p-value = 0.4605).
+:::
+
+
+## Engagement by location
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+engagement_summary_location <- survey_design %>%
+  group_by(location, engagement) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(engagement = case_when(
+    engagement == "Yes" ~ "Ever engaged",
+    engagement == "No" ~ "Never engaged",
+    TRUE ~ NA_character_
+  )) |>
+rename(Location = location) |>
+ungroup()
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# test for equality of awareness
+location_engagement_test <- survey_design %>%
+  drop_na(location, engagement) %>%
+  svychisq(
+    formula = ~ location + engagement,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 4
+
+ggplot(engagement_summary_location, aes(x=engagement, y=proportion, fill=Location)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=-0.5, position=position_dodge(0.9)) +
+  labs(title="Engagement by location", x="Awareness", y="Proportion")
+
+```
 
 
 
 ::: {.note}
-<span class="info-icon">ℹ️</span> **Note:**
-This is a custom-styled note with a background color and an info icon added to the Quarto document.
+<span class="info-icon">ℹ️</span>
+There is strong evidence to suggest that brand engagement levels vary location (p-value < 0.001).
 :::
 
-### Data Analysis
 
-Explain the data analysis methods. Include any statistical techniques, software, or algorithms applied to the data.
+## Engagement by county
 
-# Results
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 
-Present the results of your study or project here. Include charts, graphs, or tables if necessary.
+engagement_summary_county <- survey_design %>%
+  group_by(county_name, engagement) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(engagement = case_when(
+    engagement == "Yes" ~ "Ever engaged",
+    engagement == "No" ~ "Never engaged",
+    TRUE ~ NA_character_
+  )) |>
+rename(County = county_name) |>
+ungroup()
+```
 
-## Discussion
 
-Interpret the results and discuss their implications. Relate back to the background information and methods.
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 
-# Conclusion
+engagement_summary_wide <- engagement_summary_county %>%
+  select(County, engagement, total) %>%
+  pivot_wider(names_from = engagement, values_from = total,values_fill = list(total = 0))
+  
+# Step 3: Calculate the `% Aware`
+engagement_table <- engagement_summary_wide %>%
+  mutate(`% Engaged` = `Ever engaged` / (`Ever engaged` + `Never engaged`)) %>%
+  select(County, `% Engaged`, `Ever engaged`, `Never engaged`) |>
+  arrange(`% Engaged`)
 
-Summarize the key findings and their significance. Provide any recommendations or future directions.
+# Define a function to generate the color based on the value
+color_fill <- function(x) {
+  scales::col_numeric(
+    palette = colorRampPalette(c("white", "lightblue"))(10), 
+    domain = c(0, 1)
+  )(x)
+}
 
-# References
+# Create a gt table with dynamic color fill
+create_engagement_table <- function(data) {
+data %>%
+  gt() %>%
+  # tab_header(
+  #   title = "Awareness by County"
+  # ) %>%
+  data_color(
+    columns = c(`% Engaged`),
+    colors = color_fill
+  ) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+  cols_label(
+    County = "County",
+    `% Engaged` = "% Engaged",
+    `Ever engaged` = "Engaged",
+    `Never engaged` = "Unengaged"
+  ) %>%
+  fmt_percent(
+    columns = c(`% Engaged`),
+    decimals = 0
+  ) %>%
+fmt_number(
+      columns = c(`Ever engaged`, `Never engaged`),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = "Arial"
+  ) |>
+tab_options(table.width = pct(100))
+}
 
-List the references and sources used in your document.
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# test for equality of engagement
+county_engagement_test <- survey_design %>%
+  drop_na(awareness, county_name) %>%
+  svychisq(
+    formula = ~ county_name + engagement,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_engagement_table(engagement_table |> slice(1:21))
+```
+
+</div>
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_engagement_table(engagement_table |> slice(22:43))
+```
+
+</div>
+
+:::
+
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There is strong evidence that brand engagement levels vary by county (p-value < 0.001).
+:::
+
+
