@@ -1,0 +1,517 @@
+---
+format:
+  html:
+    page-layout: full
+    toc: true
+    toc-title: "Table of Contents"
+    toc-depth: 2
+    toc-location: left
+    css: custom.css
+    include-in-header: 
+      text: |
+        <div id="title">
+          <div style="float: left; width: 20%;">
+            <img src="images/logo.png" alt="Logo" style="width: 150px; margin-left: 20px;"/>
+          </div>
+          <div style="float: left; width: 60%; text-align: center;">
+            <h1> Insights from 2023 Annual Survey </h1>
+          </div>
+          <div style="float: right; width: 20%; text-align: right;">
+            <p style="margin-right: 20px; margin-top: 20px; font-size: 1.2em;">Shujaaz K&L</p>
+          </div>
+        </div>
+---
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+
+library(tidyverse)
+library(readxl)
+library(scales)
+library(DT)
+library(gt)
+library(haven)
+library(rio)
+library(janitor)
+library(data.table)
+library(sjlabelled)
+library(sjmisc)
+library(ggtext)
+library(scales)
+library(prismatic)
+library(gtsummary)
+library(survey)
+library(srvyr)
+library(psych)
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+raw_23 <- read_sav("data/2023_shujaaz annual survey anonymized.sav")
+pop_kenya <- import("data/us_census_pop_kenya.xlsx", 
+                    sheet = "2015 - 2030", 
+                    skip = 3)
+
+county_mapping <- import("data/county_cleaning.xlsx", 
+                    sheet = "Mapping") |> select(-check)
+raw_23 <- raw_23 |>
+  left_join(county_mapping,
+            by = c("Q1_2" = "value"))
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+binarize_awareness <- function(data, columns) {
+  # Ensure columns is a character vector
+  columns <- as.character(columns)
+  
+  # Loop through each specified column
+  for (col in columns) {
+    # Check if the column exists in the data frame
+    if (col %in% colnames(data)) {
+      # Replace 2 with 0 in the specified column
+      data[[col]][data[[col]] %in% c(2,3)] <- 0
+      # Assign factor labels
+      data[[col]] <- as.numeric(data[[col]])
+    } else {
+      warning(paste("Column", col, "not found in the data frame"))
+    }
+  }
+  
+  return(data)
+}
+
+# Awareness data cleaning
+awareness_vars <- c("T_Q3_1_1", 
+                    "T_Q3_1_2", 
+                    "T_Q3_1_3", 
+                    "T_Q3_1_4",
+                    "Q3_2_O1",
+                    "Q3_2_O2",
+                    "Q3_2_O3",
+                    "Q3_2a",
+                    "T_Q3_3_1",
+                    "T_Q3_3_2",
+                    "T_Q3_3_3",
+                    "Q3_4",
+                    "Q3_4a")
+
+awareness_clean <- binarize_awareness(raw_23, awareness_vars) %>%
+  mutate(awareness = do.call(pmax, c(select(., all_of(awareness_vars)), 
+                                         na.rm = TRUE))
+  )
+  
+  
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+binarize_engagement <- function(data, columns) {
+  # Ensure columns is a character vector
+  columns <- as.character(columns)
+  
+  # Loop through each specified column
+  for (col in columns) {
+    # Check if the column exists in the data frame
+    if (col %in% colnames(data)) {
+      # Replace with 1 in the specified column
+      data[[col]][data[[col]] %in% c(1,6)] <- 0
+      # Replace with 0 in the specified column
+      data[[col]][data[[col]] %in% c(2,3,4,5)] <- 1
+      # Assign factor labels
+      data[[col]] <- as.numeric(data[[col]])
+    } else {
+      warning(paste("Column", col, "not found in the data frame"))
+    }
+  }
+  
+  return(data)
+}
+
+# Awareness data cleaning
+engagement_vars <- c("T_Q3_5_1", 
+                    "T_Q3_5_2", 
+                    "T_Q3_5_3", 
+                    "T_Q3_5_4",
+                    "T_Q3_5_5",
+                    "T_Q3_5_6",
+                    "T_Q3_5_7",
+                    "T_Q3_5_8",
+                    "T_Q3_5_9",
+                    "T_Q3_5_10",
+                    "T_Q3_5_11",
+                    "T_Q3_5_12",
+                    "T_Q3_5_13",
+                    "T_Q3_5_14",
+                    "T_Q3_5_15",
+                    "T_Q3_5_16",
+                    "T_Q3_5_17",
+                    "T_Q3_5_18"
+                    )
+
+less_comic <- setdiff(engagement_vars, "T_Q3_5_1")
+
+meta_combo_vars <-  c("T_Q3_5_13","T_Q3_5_14", "T_Q3_5_15")
+facebook_vars <- c("T_Q3_5_2", "T_Q3_5_4", "T_Q3_5_12", "T_Q3_5_16")
+instagram_vars <- c("T_Q3_5_3", "T_Q3_5_6")
+youtube_vars <-  c("T_Q3_5_8", "T_Q3_5_9")
+tiktok_vars <- c("T_Q3_5_10")
+twitter_vars <- c("T_Q3_5_5")
+whatsapp_vars <- c("T_Q3_5_7")
+sms_vars <- c("T_Q3_5_17")
+
+
+engagement_clean <- binarize_engagement(awareness_clean, engagement_vars) %>%
+  mutate(engagement = do.call(pmax, c(select(., all_of(engagement_vars)), 
+                                         na.rm = TRUE)),
+         engagement_noncomic = do.call(pmax, c(select(., all_of(less_comic)), 
+                                         na.rm = TRUE)),
+         comic_only = case_when(T_Q3_5_1 == 0 ~ 0,
+                                engagement_noncomic == 0 & T_Q3_5_1 == 1 ~ 1,
+                                 TRUE ~ NA_integer_
+                                ),
+         meta_combo_use = do.call(pmax, c(select(., all_of(meta_combo_vars)), 
+                                         na.rm = TRUE)),
+         facebook_use = do.call(pmax, c(select(., all_of(facebook_vars)), 
+                                         na.rm = TRUE)),
+         instagram_use = do.call(pmax, c(select(., all_of(instagram_vars)), 
+                                         na.rm = TRUE)),
+         youtubr_use = do.call(pmax, c(select(., all_of(youtube_vars)), 
+                                         na.rm = TRUE)),
+         tiktok_use = do.call(pmax, c(select(., all_of(tiktok_vars)), 
+                                         na.rm = TRUE)),
+         whataspp_use = do.call(pmax, c(select(., all_of(whatsapp_vars)), 
+                                         na.rm = TRUE)),
+         sms_use = do.call(pmax, c(select(., all_of(sms_vars)), 
+                                         na.rm = TRUE))
+         
+  ) %>%
+  mutate(channels_use = rowSums(select(., meta_combo_use:sms_use), 
+                                na.rm = TRUE),
+         channels_binary = case_when(channels_use == 0 ~ 0,
+                                     channels_use > 1 ~ 1,
+                                     TRUE ~ NA_integer_
+                                     )
+  )
+  
+  
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+
+modern_contraception_vars <- c("FP11_6", 
+                               "FP11_7", 
+                               "FP11_8", 
+                               "FP11_9", 
+                               "FP11_10", 
+                               "FP11_11", 
+                               "FP11_12", 
+                               "T_FP11_14", 
+                               "FP11_15", 
+                               "FP11_16")
+
+engagement_clean <-engagement_clean %>%
+  mutate(modern_fp = do.call(pmin, c(select(., all_of(modern_contraception_vars)), 
+                                         na.rm = TRUE))
+         )
+
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+## select minimum data
+
+clean_data <- engagement_clean |>
+  transmute(id = SbjNum, #Respondent ID
+           code = Code,
+           county_name = county_label, # County Name
+           location = set_label(factor(case_when(Q1_6 == 1 ~ "Urban",
+                                        Q1_6 == 2 ~ "Rural",
+                                        TRUE ~ NA_character_)),
+                                "Location"),
+            # Age
+           age_group = set_label(factor(
+             case_when(Actual_Age >= 15 & Actual_Age <= 19 ~ "15-19",
+                       Actual_Age >= 20 & Actual_Age <= 24 ~ "20-24",
+                       TRUE ~ NA_character_)),
+                             "Age"),
+           # Gender
+           gender = set_label(factor(
+             case_when(Q1_8 == 1 ~ "Male",
+                       Q1_8 == 2 ~ "Female",
+                       TRUE ~ NA_character_)),
+             "Gender"),
+           
+           persona = set_label(
+             factor(case_when(
+               gender == "Female" & age_group == "15-19" ~ "Nana",
+               gender == "Female" & age_group == "20-24" ~ "Nina",
+               gender == "Male" & age_group == "15-19" ~ "Boni",
+               gender == "Male" & age_group == "20-24" ~ "Barasa",
+               TRUE ~ NA_character_)),
+               "Persona"),
+           
+           education = set_label(relevel(as.factor(
+             case_when(Q1_9 %in% c(1,2,3) ~ "Incomplete primary",
+                       Q1_9 %in% c(4) ~ "Complete primary",
+                       Q1_9 %in% c(5) ~ "Complete secondary",
+                       Q1_9 %in% c(6,7) ~ "Secondary and above",
+                       TRUE ~ NA_character_)),
+             "Incomplete primary"),
+             "Education Level"),
+           
+           
+           awareness = set_label(factor(case_when(awareness == 1 ~ 1,
+                                 awareness == 0 & engagement == 1 ~ 1,
+                                 TRUE ~ awareness
+                                 ),
+                                 labels = c("No", "Yes")),
+                                 "Awareness"),
+           
+           engagement = set_label(factor(engagement,
+                                           labels = c("No", "Yes")),
+                                 "Engagement"),
+           
+           
+           modern_fp_1 = set_label(factor(case_when(modern_fp %in% c(2,3,4,5) ~ "No",
+                                                    modern_fp == 1 ~ "Yes",
+                                                    TRUE ~ NA_character_),
+                                                  labels = c("No", "Yes")),
+                                          "Use of modern contraceptives")
+  ) |>
+  filter(!is.na(age_group))
+  
+
+```
+
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+county_pop <- pop_kenya |>
+  filter(ADM_LEVEL == 1) |>  # Ensure ADM_LEVEL column exists and is filtered for level 1
+  transmute(
+    country = "Kenya",
+    county = ADM1_NAME,  # Ensure ADM1_NAME column exists
+    code = as.numeric(NSO_CODE),  # Ensure NSO_CODE can be converted to numeric
+    
+    # Female Pop
+    F1519_2023 = F1519_2023,  # Ensure these columns exist
+    F1519_2024 = F1519_2024,
+    F1519_2025 = F1519_2025,
+    
+    F2024_2023 = F2024_2023,
+    F2024_2024 = F2024_2024,
+    F2024_2025 = F2024_2025,
+    
+    # Male Pop
+    M1519_2023 = M1519_2023,
+    M1519_2024 = M1519_2024,
+    M1519_2025 = M1519_2025,
+    
+    M2024_2023 = M2024_2023,
+    M2024_2024 = M2024_2024,
+    M2024_2025 = M2024_2025
+  ) |>
+  mutate(
+    # Explicitly refer to the current data frame within rowSums
+    POP23 = rowSums(across(c(F1519_2023, F2024_2023, M1519_2023, M2024_2023)), na.rm = TRUE),
+    POP24 = rowSums(across(c(F1519_2024, F2024_2024, M1519_2024, M2024_2024)), na.rm = TRUE),
+    POP25 = rowSums(across(c(F1519_2025, F2024_2025, M1519_2025, M2024_2025)), na.rm = TRUE)
+  )
+
+counties <- county_pop |>
+  select(county, code)
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+population_data <- county_pop |>
+    pivot_longer(
+    cols = starts_with("F") | starts_with("M"),  
+    names_to = "indicator",              
+    values_to = "population") |>
+    mutate(gender = substr(indicator, 1, 1),
+           age_group = as.integer(substr(indicator, 2, 5)),
+           year = as.integer(substr(indicator, 7, 10))) |>
+  transmute(
+    country = country,
+    code = code,
+    county = county,
+    gender = ifelse(gender == "F", "Female", "Male"),
+    age_group = paste(substr(age_group, 1, 2), substr(age_group, 3,4), sep = "-"),
+    year = year,
+    population = population
+  ) |>
+  pivot_wider(names_from = year,
+              values_from = population,
+              names_prefix = "pop")
+
+write_csv(population_data,
+          "data/pop_projections.csv")
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+
+# Step 1: Population totals for each group (typically from census data)
+survey_population_totals <- population_data |>
+  select(code, county, age_group, gender, pop2023) |>
+  rename(population = pop2023)
+
+# Step 2: Calculate counts from survey data
+survey_counts <- clean_data %>%
+  group_by(age_group, gender, code, county_name) %>%
+  summarise(count = n(), .groups = 'drop')  # .groups = 'drop' to ungroup directly
+
+# Step 3: Merge survey counts with population totals
+survey_counts <- survey_counts %>%
+  left_join(survey_population_totals, by = c("age_group", "gender", "code"))
+
+# Step 4: Calculate base weights
+# need to adjust the weight so it sums to the population instead of the sample
+survey_counts <- survey_counts |>
+  mutate(base_weight = population / count)  # Correct the formula
+
+# Step 5: Merge scaled weights back with survey data
+survey_data <- clean_data %>%
+  left_join(survey_counts |> select(age_group, gender, code, population, base_weight), 
+            by = c("age_group", "gender", "code"))
+
+# Step 6: Create a new strata variable that combines code, age_group, and gender
+survey_data <- survey_data %>%
+  mutate(strata_var = paste(code, age_group, gender, sep = "_"))
+
+# Step 7: Handle missing values in weights if any
+survey_data <- survey_data %>%
+  mutate(base_weight = ifelse(is.na(base_weight), 0, base_weight))
+
+# Step 8: Verify the weights
+sum(survey_data$base_weight)
+
+```
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+kenya_counties <- 47
+
+counties_surveyed <- survey_data |>
+  distinct(county_name) |> pull() |> length()
+
+unweighted_summary_table <- survey_data %>%
+  select(age_group, gender, location, education) %>%
+  tbl_summary(
+    by = gender,
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    digits = all_continuous() ~ 2,
+    label = list(age_group ~ "Age",
+                 location ~ "Location")
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "**Characteristic**") %>%
+  modify_spanning_header(c("stat_1", "stat_2") ~ "**Gender**") %>%
+  as_gt() %>%
+  tab_style(
+    style = list(cell_borders(sides = "all", color = "gray", weight = px(1)),
+                 cell_text(weight = "bold", color = "black")),
+    locations = cells_body()
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "black"),
+      cell_fill(color = "#FFFDD0")
+    ),
+    locations = cells_column_labels(c(label, stat_0, stat_1, stat_2))
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "black"),
+      cell_fill(color = "#FFFDD0")
+    ),
+    locations = cells_column_spanners()
+  ) %>%
+  opt_table_font(
+    font = "Arial"
+  ) 
+
+```
+
+# Demographic Characteristics
+
+The demographic characteristics section of the Shujaaz annual survey data encompasses a comprehensive overview of the survey respondents' key demographic attributes. This section includes information such as age, gender, education level, and geographic location. It provides insights into the distribution of the survey participants across different age groups and gender categories, highlighting the diversity within the population. 
+
+```{r}
+#| echo: false
+unweighted_summary_table
+```
+
+
+The total sample size is 2002. Age distribution shows that among the female respondents, 54% are aged 15-19, and 46% are aged 20-24. For male respondents, 53% fall within the 15-19 age group, while 47% are aged 20-24. In terms of location, 61% of the respondents reside in rural areas, with 60% of the females and 62% of the males living rurally. Conversely, 39% live in urban areas, with an urban distribution of 40% among females and 38% among males. Educational attainment varies, with 7.7% of the respondents having incomplete primary education (7.9% females and 7.6% males). Those who completed primary education constitute 48% of the respondents, split into 45% females and 51% males. A significant portion, 35%, have completed secondary education, with 37% females and 33% males. Finally, 9.1% have education levels of secondary and above, including 10% of females and 8.2% of males. 
+
+
+## Wildly Important Goals
+
+Provide some background information here. Explain the context and why this document is important.
+
+## Methods
+
+Describe the methods used in your research or project.
+
+### Data Collection
+
+Detail the data collection process here. Explain how the data was gathered, what tools were used, and any relevant protocols.
+
+### Data Analysis
+
+Explain the data analysis methods. Include any statistical techniques, software, or algorithms applied to the data.
+
+## Results
+
+Present the results of your study or project here. Include charts, graphs, or tables if necessary.
+
+## Discussion
+
+Interpret the results and discuss their implications. Relate back to the background information and methods.
+
+## Conclusion
+
+Summarize the key findings and their significance. Provide any recommendations or future directions.
+
+## References
+
+List the references and sources used in your document.
