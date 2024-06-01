@@ -5,7 +5,9 @@ format:
     toc: true
     toc-title: "Table of Contents"
     toc-depth: 5
+    toc-expand: 2
     toc-location: left
+    number-sections: true
     css: custom.css
     include-in-header: 
       text: |
@@ -14,7 +16,7 @@ format:
             <img src="images/logo.png" alt="Logo" style="width: 150px; margin-left: 20px;"/>
           </div>
           <div style="float: left; width: 60%; text-align: center;">
-            <h1> Annual Survey Insights Portal </h1>
+            <h1> Insights From The Annual Survey </h1>
           </div>
           <div style="float: right; width: 20%; text-align: right;">
             <p style="margin-right: 20px; margin-top: 20px; font-size: 1.2em;">Shujaaz K&L</p>
@@ -1201,7 +1203,7 @@ fmt_number(
   opt_table_font(
     font = "Arial"
   ) |>
-tab_options(table.width = pct(100), row.p)
+tab_options(table.width = pct(100))
 }
 
 ```
