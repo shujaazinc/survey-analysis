@@ -54,3 +54,55 @@ a {
 #logo img {
   width: 150px; /* Adjust the size as needed */
 }
+
+/* Styles for notes */
+.note {
+  background-color: #e7f3fe; /* Light blue background color */
+  border-left: 6px solid #2196F3;
+  padding: 10px;
+  margin: 20px 0;
+  font-family: 'Roboto Condensed', Arial, sans-serif; /* Apply Roboto Condensed font */
+  display: flex;
+  align-items: center;
+}
+
+.info-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  border-radius: 50%;
+  background-color: #2196F3;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  margin-right: 10px;
+  font-family: 'Roboto Condensed', Arial, sans-serif; /* Apply Roboto Condensed font */
+}
+
+
+.flex-container {
+  display: flex;
+  max-width: 100%;
+  margin: 0 auto; /* Center the container */
+  box-sizing: border-box;
+}
+
+.flex-item-50 {
+  flex: 0 0 50%; /* Flex-grow: 0, Flex-shrink: 0, Flex-basis: 60% */
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.flex-item-60 {
+  flex: 0 0 60%; /* Flex-grow: 0, Flex-shrink: 0, Flex-basis: 60% */
+  padding: 30px;
+  box-sizing: border-box;
+}
+
+.flex-item-40 {
+  flex: 0 0 40%; /* Flex-grow: 0, Flex-shrink: 0, Flex-basis: 40% */
+  padding: 30px;
+  box-sizing: border-box;
+}
+

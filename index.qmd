@@ -4,7 +4,7 @@ format:
     page-layout: full
     toc: true
     toc-title: "Table of Contents"
-    toc-depth: 2
+    toc-depth: 5
     toc-location: left
     css: custom.css
     include-in-header: 
@@ -47,6 +47,33 @@ library(gtsummary)
 library(survey)
 library(srvyr)
 library(psych)
+library(extrafont)
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+font_import()
+loadfonts(device = "win")
+
+# # Define the custom theme with adjusted font sizes
+# custom_theme <- theme_minimal(base_size = 15) +  # Adjust base size as needed
+#   theme(
+#     plot.title = element_text(size = 12, face = "bold"),  # Adjust title size
+#     legend.title = element_text(size = 10),              # Adjust legend title size
+#     legend.text = element_text(size = 12),               # Adjust legend text size
+#     axis.text = element_text(size = 12),                 # Adjust axis text size
+#     axis.title = element_text(size = 12)                 # Adjust axis title size
+#   )
+
+# Set the custom theme globally
+# Set the global theme
+theme_set(
+  theme_minimal(base_family = "Roboto Condensed") +
+    theme(plot.title = element_text(hjust = 0.5))
+)
 ```
 
 
@@ -108,7 +135,7 @@ awareness_vars <- c("T_Q3_1_1",
                     "Q3_4a")
 
 awareness_clean <- binarize_awareness(raw_23, awareness_vars) %>%
-  mutate(awareness = do.call(pmax, c(select(., all_of(awareness_vars)), 
+  mutate(aware = do.call(pmax, c(select(., all_of(awareness_vars)), 
                                          na.rm = TRUE))
   )
   
@@ -177,7 +204,7 @@ sms_vars <- c("T_Q3_5_17")
 
 
 engagement_clean <- binarize_engagement(awareness_clean, engagement_vars) %>%
-  mutate(engagement = do.call(pmax, c(select(., all_of(engagement_vars)), 
+  mutate(engage = do.call(pmax, c(select(., all_of(engagement_vars)), 
                                          na.rm = TRUE)),
          engagement_noncomic = do.call(pmax, c(select(., all_of(less_comic)), 
                                          na.rm = TRUE)),
@@ -285,16 +312,19 @@ clean_data <- engagement_clean |>
              "Education Level"),
            
            
-           awareness = set_label(factor(case_when(awareness == 1 ~ 1,
-                                 awareness == 0 & engagement == 1 ~ 1,
-                                 TRUE ~ awareness
+           awareness = set_label(factor(case_when(aware == 1 ~ 1,
+                                 aware == 0 & engage == 1 ~ 1,
+                                 TRUE ~ aware
                                  ),
                                  labels = c("No", "Yes")),
                                  "Awareness"),
            
-           engagement = set_label(factor(engagement,
-                                           labels = c("No", "Yes")),
-                                 "Engagement"),
+           
+           engagement = set_label(factor(case_when(!is.na(aware) & is.na(engage) ~ 0,
+                                  TRUE ~ engage
+                                  ),
+                                 labels = c("No", "Yes")),
+                                 "Awareness"),
            
            
            modern_fp_1 = set_label(factor(case_when(modern_fp %in% c(2,3,4,5) ~ "No",
@@ -437,7 +467,7 @@ unweighted_summary_table <- survey_data %>%
   select(age_group, gender, location, education) %>%
   tbl_summary(
     by = gender,
-    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    statistic = list(all_continuous() ~ "{median} ({sd})", all_categorical() ~ "{n} ({p}%)"),
     digits = all_continuous() ~ 2,
     label = list(age_group ~ "Age",
                  location ~ "Location")
@@ -467,7 +497,8 @@ unweighted_summary_table <- survey_data %>%
   ) %>%
   opt_table_font(
     font = "Arial"
-  ) 
+  ) |>
+  tab_options(row_group.padding = px(1))
 
 ```
 
@@ -484,23 +515,231 @@ unweighted_summary_table
 The total sample size is 2002. Age distribution shows that among the female respondents, 54% are aged 15-19, and 46% are aged 20-24. For male respondents, 53% fall within the 15-19 age group, while 47% are aged 20-24. In terms of location, 61% of the respondents reside in rural areas, with 60% of the females and 62% of the males living rurally. Conversely, 39% live in urban areas, with an urban distribution of 40% among females and 38% among males. Educational attainment varies, with 7.7% of the respondents having incomplete primary education (7.9% females and 7.6% males). Those who completed primary education constitute 48% of the respondents, split into 45% females and 51% males. A significant portion, 35%, have completed secondary education, with 37% females and 33% males. Finally, 9.1% have education levels of secondary and above, including 10% of females and 8.2% of males. 
 
 
-## Wildly Important Goals
+```{r}
+#| echo: false
 
-Provide some background information here. Explain the context and why this document is important.
+survey_design <- survey_data |>
+  as_survey_design(weights = base_weight,
+                   strata = code,
+                   ids = id,
+                   nest = TRUE)
+```
 
-## Methods
 
-Describe the methods used in your research or project.
+# Reach
 
-### Data Collection
+Reach is defined as individuals who are aware of Shujaaz brand. 
+
+## Overall reach
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Awareness
+awareness_summary <- survey_design %>%
+  group_by(awareness) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(awareness = case_when(
+    awareness == "Yes" ~ "Aware",
+    awareness == "No" ~ "Unaware",
+    TRUE ~ NA_character_
+  ))
+
+overall_aware_total <- awareness_summary %>%
+  filter(awareness == "Aware") %>%
+  pull(total)
+
+overall_aware_prop <- awareness_summary %>%
+  filter(awareness == "Aware") %>%
+  pull(proportion)
+
+
+
+awareness_summary_persona <- survey_design %>%
+  group_by(persona, awareness) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+  mutate(awareness = case_when(
+    awareness == "Yes" ~ "Aware",
+    awareness == "No" ~ "Unaware",
+    TRUE ~ NA_character_
+  ))
+
+
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 4
+#| fig-height: 2
+
+ggplot(awareness_summary, aes(x = 2, y = proportion, fill = awareness)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  theme(legend.position = "none") +
+  xlim(0.5, 2.5) +
+  geom_text(aes(label = ifelse(awareness == "Aware", 
+  paste0(label_percent()(overall_aware_prop)), "")), 
+            position = position_stack(vjust = 0.5), color = "black")+
+  scale_fill_manual(values = c("Aware" = "#FA0005", "Unaware" = "darkgray"),
+                    name = "Legend") +
+labs(
+    title = "Percentage reach"
+  )
+```
+
+</div>
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 4
+#| fig-height: 2
+
+ggplot(awareness_summary, aes(x = 2, y = total, fill = awareness)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  theme(legend.position = "none") +
+  xlim(0.5, 2.5) +
+  geom_text(aes(label = ifelse(awareness == "Aware", 
+  paste0(comma((overall_aware_total))), "")), 
+            position = position_stack(vjust = 0.5), color = "black")+
+  scale_fill_manual(values = c("Aware" = "#FA0005", "Unaware" = "darkgray"),
+                    name = "Legend") +
+labs(
+    title = "Absolute reach"
+  )
+```
+
+</div>
+
+:::
+
+**`r comma(overall_aware_total)`** (**`r label_percent()(overall_aware_prop)`**) young people are aware of Shujaaz media.
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+These results include prompted and un-prompted.
+:::
+
+## Reach by persona
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 4
+
+
+awareness_summary_persona |>
+ggplot(aes(x = persona, y = proportion, 
+             fill = fct_rev(awareness))) +
+  geom_col(position = "fill", color = "white") +
+  geom_text(aes(label = label_percent(accuracy=1)(proportion)), 
+            position = position_fill(vjust = 0.5),color = "white") +  # Adjust size and color as needed
+  scale_fill_manual(
+    values = c("darkgrey", "#FA0005"),
+    guide = guide_legend(reverse = TRUE)
+  ) +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Awareness by Persona",
+    y = NULL,
+    x = NULL,
+    fill = "Legend"
+  ) 
+```
+
+
+
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Brand awareness across all personas was largely similar, as the differences were not statistically significant (p-value = 0.3294).
+:::
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# test for equality of brand awareness
+persona_awareness_test <- survey_design %>%
+  drop_na(awareness, persona) %>%
+  svychisq(
+    formula = ~ persona + awareness,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+
+## Data Collection
 
 Detail the data collection process here. Explain how the data was gathered, what tools were used, and any relevant protocols.
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+awareness_summary_persona |>
+  ggplot(aes(x = persona, y = proportion, 
+             fill = fct_rev(awareness))) +
+  geom_col(position = "fill", color = "white") +
+  geom_text(aes(label = label_percent(accuracy=1)(proportion)), 
+            position = position_fill(vjust = 0.5), color = "white") +
+  scale_fill_manual(
+    values = c("darkgrey", "#FA0005"),
+    guide = guide_legend(reverse = TRUE)
+  ) +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Awareness by Persona",
+    y = NULL,
+    x = NULL,
+    fill = "Legend"
+  ) 
+```
+
+
+There are slight differences in the proportion of youth aware of shujaaz media. Overall, Nina has the highest awareness.
+
+
+
+::: {.note}
+<span class="info-icon">ℹ️</span> **Note:**
+This is a custom-styled note with a background color and an info icon added to the Quarto document.
+:::
 
 ### Data Analysis
 
 Explain the data analysis methods. Include any statistical techniques, software, or algorithms applied to the data.
 
-## Results
+# Results
 
 Present the results of your study or project here. Include charts, graphs, or tables if necessary.
 
@@ -508,10 +747,10 @@ Present the results of your study or project here. Include charts, graphs, or ta
 
 Interpret the results and discuss their implications. Relate back to the background information and methods.
 
-## Conclusion
+# Conclusion
 
 Summarize the key findings and their significance. Provide any recommendations or future directions.
 
-## References
+# References
 
 List the references and sources used in your document.
