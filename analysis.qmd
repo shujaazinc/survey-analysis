@@ -473,7 +473,7 @@ unweighted_summary_table <- survey_data %>%
 
 # Demographic Characteristics
 
-The demographic characteristics section of the Shujaaz annual survey data encompasses a comprehensive overview of the survey respondents' key demographic attributes. This section includes information such as age, gender, education level, and geographic location. It provides insights into the distribution of the survey participants across different age groups and gender categories, highlighting the diversity within the population. 
+This section provides an overview of repondent key attributes including information such as age, gender, education level, and geographic location. It provides insights into the distribution of the survey participants across different age groups and gender categories, highlighting the diversity within the population. 
 
 ```{r}
 #| echo: false
