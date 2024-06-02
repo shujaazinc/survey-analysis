@@ -74,7 +74,11 @@ loadfonts(device = "win")
 # Set the global theme
 theme_set(
   theme_minimal(base_family = "Roboto Condensed") +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank())
 )
 ```
 
@@ -275,7 +279,7 @@ engagement_clean <-engagement_clean %>%
 ## select minimum data
 
 clean_data <- engagement_clean |>
-  transmute(id = SbjNum, #Respondent ID
+  mutate(id = SbjNum, #Respondent ID
            code = Code,
            county_name = county_label, # County Name
            location = set_label(factor(case_when(Q1_6 == 1 ~ "Urban",
@@ -1112,7 +1116,7 @@ ggplot(engagement_summary_location, aes(x=engagement, y=proportion, fill=Locatio
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-There is strong evidence to suggest that brand engagement levels vary location (p-value < 0.001).
+There is strong evidence to suggest that brand engagement levels vary by location (p-value < 0.001).
 :::
 
 
@@ -1259,5 +1263,450 @@ create_engagement_table(engagement_table |> slice(22:43))
 <span class="info-icon">ℹ️</span>
 There is strong evidence that brand engagement levels vary by county (p-value < 0.001).
 :::
+
+
+
+## Media usage
+::: {.note}
+<span class="info-icon">ℹ️</span>
+For this analysis, respondents were asked about the frequency using Shujaaz media across various platforms. Those who refused or dont know are included in the calculations but excluded from the visuals.
+:::
+
+### Comic
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+
+
+# List of variables to process
+variables <- c("T_Q3_6_1")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_1" = "Read Comic")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
+### Watched STRA
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+
+
+# List of variables to process
+variables <- c("T_Q3_6_8")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_8" = "Watched STRA")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.4 * max(combined_df$valid.prc)
+
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
+
+
+### Shujaaz Kenya
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_6_2", "T_Q3_6_3","T_Q3_6_9", "T_Q3_6_10")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_2" = "Shujaaz Facebook",
+                     "T_Q3_6_3" = "Shujaaz Instagram",
+                     "T_Q3_6_9" = "Shujaaz YouTube",
+                     "T_Q3_6_10" = "Shujaaz TikTok"
+)
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, 50)
+
+
+
+```
+
+
+### Shujaaz Biz
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+
+
+# List of variables to process
+variables <- c("T_Q3_6_16")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_16" = "Shujaaz Biz Facebook")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
+
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
+### SMS Usage
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+
+
+# List of variables to process
+variables <- c("T_Q3_6_17")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_17" = "SMS to DJ B, Maria Kim, Malkia, or Charlie Pele")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
+
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
+### Maria Kim
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+
+
+# List of variables to process
+variables <- c("T_Q3_6_13")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_13" = "Maria Kim's Facebook and/or Instagram")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
+
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
+
+### Malkia
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+
+
+# List of variables to process
+variables <- c("T_Q3_6_14")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_14" = "Malkia’s Facebook and/or Instagram")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
+
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
+
+### Charlie Pele
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+
+
+# List of variables to process
+variables <- c("T_Q3_6_15")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_15" = "Charlie Pele’s Facebook and/or Instagram")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
+
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
+
+### DJB
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_6_4", "T_Q3_6_5","T_Q3_6_6", "T_Q3_6_6", "T_Q3_6_7")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_4" = "DJB Facebook",
+                     "T_Q3_6_5" = "DJB Twitter",
+                     "T_Q3_6_6" = "DJB Instagram",
+                     "T_Q3_6_7" = "DJB WhatsApp"
+)
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, 50)
+
+
+
+```
+
+
 
 
