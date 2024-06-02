@@ -1823,7 +1823,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-The chart below is for all Ninas who have ever engaged with Shujaaz media.
+The chart below is for all Barasa ever engaged with Shujaaz media.
 :::
 
 ```{r}
@@ -1930,7 +1930,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-The chart below is for all Ninas who have ever engaged with Shujaaz media.
+The chart below is for all Boni ever engaged with Shujaaz media.
 :::
 
 ```{r}
@@ -2036,7 +2036,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-The chart below is for all Ninas who have ever engaged with Shujaaz media.
+The chart below is for all Nana ever engaged with Shujaaz media.
 :::
 
 ```{r}
@@ -2141,7 +2141,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-The chart below is for all Ninas who have ever engaged with Shujaaz media.
+The chart below is for all Nina ever engaged with Shujaaz media.
 :::
 
 ```{r}
@@ -2241,4 +2241,4 @@ fmt_number(
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
-
+## Money
