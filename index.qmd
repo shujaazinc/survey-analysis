@@ -50,6 +50,7 @@ library(survey)
 library(srvyr)
 library(psych)
 library(extrafont)
+library(likert)
 ```
 
 ```{r}
@@ -459,6 +460,20 @@ survey_data <- survey_data %>%
 sum(survey_data$base_weight)
 
 ```
+
+```{r}
+#| echo: false
+
+survey_design <- survey_data |>
+  as_survey_design(weights = base_weight,
+                   strata = code,
+                   ids = id,
+                   nest = TRUE)
+```
+
+
+# Demographic Characteristics
+
 ```{r}
 #| message: false
 #| results: hide
@@ -502,13 +517,13 @@ unweighted_summary_table <- survey_data %>%
     locations = cells_column_spanners()
   ) %>%
   opt_table_font(
-    font = "Arial"
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
   ) |>
-  tab_options(row_group.padding = px(1))
+  tab_options(data_row.padding = px(2))
 
 ```
-
-# Demographic Characteristics
 
 ```{r}
 #| echo: false
@@ -517,17 +532,6 @@ unweighted_summary_table
 
 
 The total sample size is 2002. Age distribution shows that among the female respondents, 54% are aged 15-19, and 46% are aged 20-24. In terms of location, 61% of the respondents reside in rural areas, with 60% of the females and 62% of the males living rurally. Conversely, 39% live in urban areas, with an urban distribution of 40% among females and 38% among males. Educational attainment varies, with 7.7% of the respondents having incomplete primary education (7.9% females and 7.6% males).
-
-
-```{r}
-#| echo: false
-
-survey_design <- survey_data |>
-  as_survey_design(weights = base_weight,
-                   strata = code,
-                   ids = id,
-                   nest = TRUE)
-```
 
 
 # Reach
@@ -1707,6 +1711,534 @@ ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
 
 ```
 
+# Lives Changed
 
+## Agency Models
+### All persona
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The chart below is for all personas who have ever engaged with Shujaaz media.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_AM1_1", "T_AM1_2", "T_AM1_3", "T_AM1_4", "T_AM1_5", "T_AM1_6", "T_AM1_7", "T_AM1_8")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_AM1_1" = "I will be able to achieve most of the goals that I set for myself",
+                     "T_AM1_2" = "When facing difficult tasks, I am certain that I will accomplish them",
+                     "T_AM1_3" = "I think that I can obtain outcomes that are important to me",
+                     "T_AM1_4" = "I believe I can succeed at most any endeavor to which I set my mind",
+                     "T_AM1_5" = "I will be able to successfully overcome many challenges",
+                     "T_AM1_6" = "I am confident that I can perform effectively on many different tasks",
+                     "T_AM1_7" = "Compared to other people, I can do most tasks very well",
+                     "T_AM1_8" = "Even when things are tough, I can perform quite well")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `Neither agree nor disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(" " = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
+
+
+### Barasa
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The chart below is for all Ninas who have ever engaged with Shujaaz media.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_AM1_1", "T_AM1_2", "T_AM1_3", "T_AM1_4", "T_AM1_5", "T_AM1_6", "T_AM1_7", "T_AM1_8")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_AM1_1" = "I will be able to achieve most of the goals that I set for myself",
+                     "T_AM1_2" = "When facing difficult tasks, I am certain that I will accomplish them",
+                     "T_AM1_3" = "I think that I can obtain outcomes that are important to me",
+                     "T_AM1_4" = "I believe I can succeed at most any endeavor to which I set my mind",
+                     "T_AM1_5" = "I will be able to successfully overcome many challenges",
+                     "T_AM1_6" = "I am confident that I can perform effectively on many different tasks",
+                     "T_AM1_7" = "Compared to other people, I can do most tasks very well",
+                     "T_AM1_8" = "Even when things are tough, I can perform quite well")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Barasa") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `Neither agree nor disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(" " = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
+
+
+
+
+### Boni
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The chart below is for all Ninas who have ever engaged with Shujaaz media.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_AM1_1", "T_AM1_2", "T_AM1_3", "T_AM1_4", "T_AM1_5", "T_AM1_6", "T_AM1_7", "T_AM1_8")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_AM1_1" = "I will be able to achieve most of the goals that I set for myself",
+                     "T_AM1_2" = "When facing difficult tasks, I am certain that I will accomplish them",
+                     "T_AM1_3" = "I think that I can obtain outcomes that are important to me",
+                     "T_AM1_4" = "I believe I can succeed at most any endeavor to which I set my mind",
+                     "T_AM1_5" = "I will be able to successfully overcome many challenges",
+                     "T_AM1_6" = "I am confident that I can perform effectively on many different tasks",
+                     "T_AM1_7" = "Compared to other people, I can do most tasks very well",
+                     "T_AM1_8" = "Even when things are tough, I can perform quite well")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `Neither agree nor disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(" " = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
+
+
+
+### Nana
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The chart below is for all Ninas who have ever engaged with Shujaaz media.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_AM1_1", "T_AM1_2", "T_AM1_3", "T_AM1_4", "T_AM1_5", "T_AM1_6", "T_AM1_7", "T_AM1_8")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_AM1_1" = "I will be able to achieve most of the goals that I set for myself",
+                     "T_AM1_2" = "When facing difficult tasks, I am certain that I will accomplish them",
+                     "T_AM1_3" = "I think that I can obtain outcomes that are important to me",
+                     "T_AM1_4" = "I believe I can succeed at most any endeavor to which I set my mind",
+                     "T_AM1_5" = "I will be able to successfully overcome many challenges",
+                     "T_AM1_6" = "I am confident that I can perform effectively on many different tasks",
+                     "T_AM1_7" = "Compared to other people, I can do most tasks very well",
+                     "T_AM1_8" = "Even when things are tough, I can perform quite well")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Nana") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `Neither agree nor disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(" " = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
+
+
+### Nina
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The chart below is for all Ninas who have ever engaged with Shujaaz media.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_AM1_1", "T_AM1_2", "T_AM1_3", "T_AM1_4", "T_AM1_5", "T_AM1_6", "T_AM1_7", "T_AM1_8")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_AM1_1" = "I will be able to achieve most of the goals that I set for myself",
+                     "T_AM1_2" = "When facing difficult tasks, I am certain that I will accomplish them",
+                     "T_AM1_3" = "I think that I can obtain outcomes that are important to me",
+                     "T_AM1_4" = "I believe I can succeed at most any endeavor to which I set my mind",
+                     "T_AM1_5" = "I will be able to successfully overcome many challenges",
+                     "T_AM1_6" = "I am confident that I can perform effectively on many different tasks",
+                     "T_AM1_7" = "Compared to other people, I can do most tasks very well",
+                     "T_AM1_8" = "Even when things are tough, I can perform quite well")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Nina") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `Neither agree nor disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(" " = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
 
 
