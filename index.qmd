@@ -57,6 +57,7 @@ library(likert)
 #| message: false
 #| results: hide
 #| echo: false
+#| warning: false
 
 font_import()
 loadfonts(device = "win")
@@ -532,6 +533,263 @@ unweighted_summary_table
 
 
 The total sample size is 2002. Age distribution shows that among the female respondents, 54% are aged 15-19, and 46% are aged 20-24. In terms of location, 61% of the respondents reside in rural areas, with 60% of the females and 62% of the males living rurally. Conversely, 39% live in urban areas, with an urban distribution of 40% among females and 38% among males. Educational attainment varies, with 7.7% of the respondents having incomplete primary education (7.9% females and 7.6% males).
+
+
+# Media Consumption
+
+## Consumption Frequency
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+This analysis is for all survey respondents.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# List of variables to process
+variables <- c("T_Q2_1_1", "T_Q2_1_2", "T_Q2_1_3", "T_Q2_1_4", "T_Q2_1_5", "T_Q2_1_6", "T_Q2_1_7")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q2_1_1" = "Watch broadcast TV",
+                     "T_Q2_1_2" = "Watch movies",
+                     "T_Q2_1_3" = "Listen to the radio",
+                     "T_Q2_1_4" = "Read local newspapers",
+                     "T_Q2_1_5" = "Read local cartoon booklets",
+                     "T_Q2_1_6" = "Use the internet (excluding social networking sites)",
+                     "T_Q2_1_7" = "Visit social networking sites"
+                     )
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(!is.na(label))
+# 
+# y_limit <- max(combined_df$valid.prc) + 0.4 * max(combined_df$valid.prc)
+# # Plot using facet_wrap with shared axes
+# ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
+#   geom_bar(stat = "identity", fill = "#FA0005") +
+#   geom_text(aes(label = label_text), hjust = -0.05) +
+#   coord_flip() +
+#   facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+#   ylim(0, 50)
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+
+bind_rows(viz_likert_percent, viz_likert_number) |>
+gt(rowname_col = "Data",
+groupname_col = "variable_title") %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+
+
+```
+
+## Mobile phone ownership
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+This analysis is for all survey respondents.
+:::
+
+::: {.flex-container}
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 4
+#| fig-height: 2
+
+
+owns_mobile <- survey_data |>
+frq(Q2_3, weights = base_weight)
+    
+owns_mobile <- as.data.frame(owns_mobile[[1]]) |>
+filter(!is.na(val))
+
+with_phone_number <- owns_mobile %>%
+  filter(label == "Yes") %>%
+  pull(frq)
+
+with_phone_prop <- owns_mobile %>%
+  filter(label == "Yes") %>%
+  pull(valid.prc)
+
+
+ggplot(owns_mobile, aes(x = 2, y = valid.prc, fill = label)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  theme(legend.position = "none") +
+  xlim(0.5, 2.5) +
+  geom_text(aes(label = ifelse(label == "Yes", 
+  paste0(label_percent()(with_phone_prop/100)), "")), 
+            position = position_stack(vjust = 0.5), color = "black")+
+  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "darkgray"),
+                    name = "Legend") +
+labs(
+    title = "Mobile Phone Ownership"
+  )
+```
+
+- Basic phone – only allows calling, messaging, saving numbers
+- Feature phone – has camera, radio, basic internet
+- Smartphone – has a touch screen, mobile applications, e.g., WhatsApp, Instagram, TikTok
+
+
+
+</div>
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 4
+#| fig-height: 2
+
+# Basic
+basic_phones <- survey_data |>
+frq(T_Q2_4_1, weights = base_weight)
+
+basic_phones_df <- as.data.frame(basic_phones[[1]]) |>
+filter(!is.na(val)) |>
+transmute(Type = "Basic phone",
+`# phones` = val,
+Percentage = valid.prc,
+Number = frq)
+
+# Feature
+feature_phones <- survey_data |>
+frq(T_Q2_4_2, weights = base_weight)
+
+feature_phones_df <- as.data.frame(feature_phones[[1]]) |>
+filter(!is.na(val)) |>
+transmute(Type = "Feature phone",
+`# phones` = val,
+Percentage = valid.prc,
+Number = frq)
+
+
+# Smartphone
+smartphones <- survey_data |>
+frq(T_Q2_4_3, weights = base_weight)
+
+smartphones_df <- as.data.frame(smartphones[[1]]) |>
+filter(!is.na(val)) |>
+transmute(Type = "Smartphone",
+`# phones` = val,
+Percentage = valid.prc,
+Number = frq)
+
+
+mobile_type_df <- bind_rows(basic_phones_df, feature_phones_df, smartphones_df)
+
+mobile_type_df |>
+gt(groupname_col = "Type") %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(0.5))
+
+
+```
+
+</div>
+
+:::
 
 
 # Reach
@@ -1706,8 +1964,6 @@ ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
   coord_flip() +
   facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
   ylim(0, 50)
-
-
 
 ```
 
