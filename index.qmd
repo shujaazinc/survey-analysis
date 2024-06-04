@@ -339,6 +339,12 @@ clean_data <- engagement_clean |>
                                                     modern_fp == 1 ~ "Yes",
                                                     TRUE ~ NA_character_),
                                                   labels = c("No", "Yes")),
+                                          "Use of modern contraceptives"),
+         am3_likert = set_label(factor(case_when(AM3 == 1 ~ "Disagree",
+                                                 AM3 == 2 ~ "Agree",
+                                                 AM3 == 3 ~ "Strongly Agree",
+                                                 TRUE ~ NA_character_),
+                                                  labels = c("Disagree", "Agree", "Strongly Agree")),
                                           "Use of modern contraceptives")
   ) |>
   filter(!is.na(age_group))
