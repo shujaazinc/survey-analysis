@@ -340,12 +340,18 @@ clean_data <- engagement_clean |>
                                                     TRUE ~ NA_character_),
                                                   labels = c("No", "Yes")),
                                           "Use of modern contraceptives"),
-         am3_likert = set_label(factor(case_when(AM3 == 1 ~ "Disagree",
-                                                 AM3 == 2 ~ "Agree",
-                                                 AM3 == 3 ~ "Strongly Agree",
-                                                 TRUE ~ NA_character_),
-                                                  labels = c("Disagree", "Agree", "Strongly Agree")),
-                                          "Use of modern contraceptives")
+         optimism = set_label(factor(case_when(
+                                            AM3 == 1 ~ 0,
+                                            AM3 %in% c(2, 3) ~ 1,
+                                            TRUE ~ NA_integer_
+                                          ), labels = c("No", "Yes")),
+                                          "Optimism"),
+         money_mngt = set_label(factor(case_when(
+                                            T_F1_1 == 2 ~ 0,
+                                            T_F1_1 == 1 ~ 1,
+                                            TRUE ~ NA_integer_
+                                          ), labels = c("No", "Yes")),
+                                          "I know how to manage the little money I have to take care of my needs")
   ) |>
   filter(!is.na(age_group))
   
@@ -1983,9 +1989,10 @@ ggplot(combined_df, aes(x = reorder(label, -valid.prc), y = valid.prc)) +
 
 # Agency Models
 
-## Users
+## Sense of self-belief
+### Users
 
-### All personas
+#### All personas
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2094,7 +2101,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
-### Barasa
+#### Barasa
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2205,7 +2212,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
-### Boni
+#### Boni
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2315,7 +2322,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
-### Nana
+#### Nana
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2424,7 +2431,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
-### Nina
+#### Nina
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2533,9 +2540,9 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
-## Non-users
+### Non-users
 
-### All personas
+#### All personas
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2644,7 +2651,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
-### Barasa
+#### Barasa
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2755,7 +2762,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
-### Boni
+#### Boni
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2865,7 +2872,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
-### Nana
+#### Nana
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -2974,7 +2981,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
-### Nina
+#### Nina
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -3083,5 +3090,247 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
+## Optimistic about future
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+
+summarize_by_persona <- function(survey_data, variable,  description = NULL) {
+  # Define a helper function to add persona column to the data frame
+  add_persona_column <- function(df, persona_value) {
+    df %>% mutate(persona = persona_value)
+  }
+  
+  # Process the 'All' group
+  all_results <- survey_data |> 
+    group_split(persona) |> 
+    map_dfr(~ {
+      df <- frq(.x, !!sym(variable), weights = .x$base_weight) |> 
+        rbindlist()
+      add_persona_column(df, unique(.x$persona))
+    }) |>
+    mutate(engagement = "All",
+indicator = description)
+  
+  # Process the 'Yes' engagement group
+  yes_results <- survey_data |> 
+    filter(engagement == "Yes") |> 
+    group_split(persona) |> 
+    map_dfr(~ {
+      df <- frq(.x, !!sym(variable), weights = .x$base_weight) |> 
+        rbindlist()
+      add_persona_column(df, unique(.x$persona))
+    }) |>
+    mutate(engagement = "Yes",
+indicator = description)
+  
+  # Process the 'No' engagement group
+  no_results <- survey_data |> 
+    filter(engagement == "No") |> 
+    group_split(persona) |> 
+    map_dfr(~ {
+      df <- frq(.x, !!sym(variable), weights = .x$base_weight) |> 
+        rbindlist()
+      add_persona_column(df, unique(.x$persona))
+    }) |>
+    mutate(engagement = "No",
+indicator = description)
+  
+  # Combine all results
+  return(bind_rows(all_results, yes_results, no_results)) 
+}
+
+
+
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+
+community_support <- summarize_by_persona(survey_data, 
+"optimism", 
+"Optimistic about future") |>
+mutate(label = val) |>
+select(indicator, label, persona, engagement, valid.prc, frq ) |>
+rename(Percent = valid.prc, Number = frq) |>
+filter(!is.na(label)) |>
+select(-c(indicator))
+
+community_support|>
+filter(label == "Yes") |>
+select(-c(label, Number))|>
+mutate(engagement = case_when(engagement == "All" ~ "Overall",
+engagement == "Yes" ~ "User",
+engagement == "No" ~ "Non user",
+TRUE ~ NA_character_)) |>
+rename(Persona = persona) |>
+pivot_wider(names_from = engagement, values_from = Percent) |>
+gt()|>
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("Persona")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("Persona")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
+
+
+
 
 # Money
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+I know how to manage the little money I have to take care of my needs
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 8
+
+# List of variables to summarize
+manage_money <- summarize_by_persona(survey_data, 
+"T_F1_1", 
+"I know how to manage the little money I have to take care of my needs") |>
+mutate(label = val) |>
+select(indicator, label, persona, engagement, valid.prc, frq ) |>
+rename(Percent = valid.prc, Number = frq) |>
+filter(!is.na(label)) |>
+mutate(label = case_when(label == 1 ~ "Yes",
+label == 2 ~ "No",
+TRUE ~ NA_character_))
+
+manage_money |>
+filter(label == "Yes") |>
+select(-c(label, Number, indicator))|>
+mutate(engagement = case_when(engagement == "All" ~ "Overall",
+engagement == "Yes" ~ "User",
+engagement == "No" ~ "Non user",
+TRUE ~ NA_character_)) |>
+rename(Persona = persona) |>
+pivot_wider(names_from = engagement, values_from = Percent) |>
+gt()|>
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("Persona")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("Persona")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 8
+
+library(dplyr)
+library(purrr)
+library(survey)
+
+# Define a function to perform the proportion test for a given persona
+perform_prop_test <- function(persona_value, survey_design) {
+  # Filter data for the specific persona and drop NAs
+  persona_data <- subset(survey_design, persona == persona_value) %>%
+    drop_na(engagement, money_mngt)
+  
+  # Fit a logistic regression model
+  fit <- svyglm(money_mngt ~ engagement, design = persona_data, family = quasibinomial())
+  
+  # Perform a Wald test to check if the proportion of users differs between the levels of engagement
+  wald_test <- regTermTest(fit, "engagement")
+  
+  return(wald_test)
+}
+
+# Get the unique personas
+# Get the unique personas
+unique_personas <- survey_data %>%
+  distinct(persona) %>%
+  pull(persona)
+
+# Perform the test for each persona and store the results in a list
+prop_tests <- map(unique_personas, ~ perform_prop_test(.x, survey_design))
+
+# Name the list elements with the corresponding persona values
+names(prop_tests) <- unique_personas
+
+# Print the results
+#prop_tests
+
+
+
+
+```
+
+
+
+
