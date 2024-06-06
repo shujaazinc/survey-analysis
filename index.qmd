@@ -51,6 +51,8 @@ library(srvyr)
 library(psych)
 library(extrafont)
 library(likert)
+library(broom)
+library(prettyunits)
 ```
 
 ```{r}
@@ -59,7 +61,7 @@ library(likert)
 #| echo: false
 #| warning: false
 
-font_import()
+#font_import()
 loadfonts(device = "win")
 
 # # Define the custom theme with adjusted font sizes
@@ -544,9 +546,6 @@ unweighted_summary_table
 ```
 
 
-The total sample size is 2002. Age distribution shows that among the female respondents, 54% are aged 15-19, and 46% are aged 20-24. In terms of location, 61% of the respondents reside in rural areas, with 60% of the females and 62% of the males living rurally. Conversely, 39% live in urban areas, with an urban distribution of 40% among females and 38% among males. Educational attainment varies, with 7.7% of the respondents having incomplete primary education (7.9% females and 7.6% males).
-
-
 # Media Consumption
 
 ## Consumption Frequency
@@ -871,7 +870,7 @@ ggplot(awareness_summary, aes(x = 2, y = proportion, fill = awareness)) +
   scale_fill_manual(values = c("Aware" = "#FA0005", "Unaware" = "darkgray"),
                     name = "Legend") +
 labs(
-    title = "Percentage reach"
+    title = "Percent reached"
   )
 ```
 
@@ -898,7 +897,7 @@ ggplot(awareness_summary, aes(x = 2, y = total, fill = awareness)) +
   scale_fill_manual(values = c("Aware" = "#FA0005", "Unaware" = "darkgray"),
                     name = "Legend") +
 labs(
-    title = "Absolute reach"
+    title = "Number reached"
   )
 ```
 
@@ -919,7 +918,7 @@ These results include prompted and un-prompted.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-width: 8
+#| fig-width: 6
 #| fig-height: 4
 
 
@@ -1244,7 +1243,7 @@ ggplot(engagement_summary, aes(x = 2, y = proportion, fill = engagement)) +
   scale_fill_manual(values = c("Ever engaged" = "#FA0005", "Never engaged" = "darkgray"),
                     name = "Legend") +
 labs(
-    title = "Percentage engaged"
+    title = "Percent of users"
   )
 ```
 
@@ -1271,7 +1270,7 @@ ggplot(engagement_summary, aes(x = 2, y = total, fill = engagement)) +
   scale_fill_manual(values = c("Ever engaged" = "#FA0005", "Never engaged" = "darkgray"),
                     name = "Legend") +
 labs(
-    title = "Absolute engagement"
+    title = "Number of users"
   )
 ```
 
@@ -3218,9 +3217,11 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 ## Money Management
 
+**Question :** I know how to manage the little money I have to take care of my needs.
+
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-I know how to manage the little money I have to take care of my needs
+**65%** of young people who have ever used Shujaaz media manage their money well, compared to **53%** for those who have never (P value `r pretty_p_value(5.387e-07)`).
 :::
 
 ```{r}
@@ -3230,7 +3231,14 @@ I know how to manage the little money I have to take care of my needs
 #| fig-height: 5
 #| fig-width: 8
 
-money_mngt_summary <- survey_design %>%
+money_mngt_overall<- survey_design %>%
+  group_by(engagement, money_mngt) %>%
+  summarise(prop = survey_prop()) %>%
+  filter(money_mngt == "Yes") %>%
+  select(-c(prop_se)) |>
+  pivot_wider(names_from = engagement, values_from = prop)
+
+money_mngt_persona<- survey_design %>%
   group_by(persona, engagement, money_mngt) %>%
   summarise(prop = survey_prop()) %>%
   filter(money_mngt == "Yes") %>%
@@ -3243,10 +3251,44 @@ money_mngt_summary <- survey_design %>%
 #| echo: false
 #| message: false
 #| warning: false
+#| fig-height: 5
+#| fig-width: 8
+#| results: hide
+
+# Test of independennce
+chisq_test1 <- svychisq(~ money_mngt + engagement, survey_design)
+chisq_test1 <- summary(svytable(~money_mngt + engagement,survey_design))
+
+# Create a contingency table for Money Management (No, Yes) and Engagement (No, Yes)
+data <- svytable(~money_mngt + engagement,survey_design)
+
+# Perform Chi-Square Test
+chi_square_test <- chisq.test(data)
+#chi_square_test
+
+# If the Chi-Square test is significant, perform test of proportions
+res <- if(chi_square_test$p.value < 0.05) {
+  # Extract counts
+  yes_money_mngt <- data[2,]
+  
+  # Perform proportion tests
+  prop_test_yes <- prop.test(yes_money_mngt, colSums(data), alternative = "less")
+  
+  # Print proportion test results
+  print(prop_test_yes)
+}
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
 #| fig-height: 4
 #| fig-width: 6
 
-money_mngt_summary |>
+money_mngt_persona |>
 pivot_longer(cols = No:Yes, names_to = "User") |>
 ggplot(aes(x = persona, y = value, fill = User)) +
   geom_bar(stat = 'identity', position = position_dodge(width = 0.9)) +
@@ -3258,51 +3300,6 @@ ggplot(aes(x = persona, y = value, fill = User)) +
        y = 'Percent Score') +
   scale_fill_manual(values = c('No' = 'darkgrey', 'Yes' = '#FA0005'))+
 scale_y_continuous(labels = scales::label_percent(accuracy = 1))
-```
-
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-height: 5
-#| fig-width: 8
-
-library(dplyr)
-library(purrr)
-library(survey)
-
-# Define a function to perform the proportion test for a given persona
-perform_prop_test <- function(persona_value, survey_design) {
-  # Filter data for the specific persona and drop NAs
-  persona_data <- subset(survey_design, persona == persona_value) %>%
-    drop_na(engagement, money_mngt)
-  
-  # Fit a logistic regression model
-  fit <- svyglm(money_mngt ~ engagement, design = persona_data, family = quasibinomial())
-  
-  # Perform a Wald test to check if the proportion of users differs between the levels of engagement
-  wald_test <- regTermTest(fit, "engagement")
-  
-  return(wald_test)
-}
-
-# Get the unique personas
-# Get the unique personas
-unique_personas <- survey_data %>%
-  distinct(persona) %>%
-  pull(persona)
-
-# Perform the test for each persona and store the results in a list
-prop_tests <- map(unique_personas, ~ perform_prop_test(.x, survey_design))
-
-# Name the list elements with the corresponding persona values
-names(prop_tests) <- unique_personas
-
-# Print the results
-#prop_tests
-
-
 
 
 ```
