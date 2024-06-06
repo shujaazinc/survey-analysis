@@ -3216,6 +3216,8 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 # Money
 
+## Money Management
+
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 I know how to manage the little money I have to take care of my needs
@@ -3228,61 +3230,35 @@ I know how to manage the little money I have to take care of my needs
 #| fig-height: 5
 #| fig-width: 8
 
-# List of variables to summarize
-manage_money <- summarize_by_persona(survey_data, 
-"T_F1_1", 
-"I know how to manage the little money I have to take care of my needs") |>
-mutate(label = val) |>
-select(indicator, label, persona, engagement, valid.prc, frq ) |>
-rename(Percent = valid.prc, Number = frq) |>
-filter(!is.na(label)) |>
-mutate(label = case_when(label == 1 ~ "Yes",
-label == 2 ~ "No",
-TRUE ~ NA_character_))
-
-manage_money |>
-filter(label == "Yes") |>
-select(-c(label, Number, indicator))|>
-mutate(engagement = case_when(engagement == "All" ~ "Overall",
-engagement == "Yes" ~ "User",
-engagement == "No" ~ "Non user",
-TRUE ~ NA_character_)) |>
-rename(Persona = persona) |>
-pivot_wider(names_from = engagement, values_from = Percent) |>
-gt()|>
-  tab_style(
-    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
-    locations = cells_body()
-  ) %>%
-fmt_number(
-      columns = everything(),
-      decimals = 0,
-      use_seps = TRUE
-    ) %>%
-  tab_style(
-    style = list(
-      cell_text(weight = "bold", size = px(16))
-    ),
-    locations = cells_column_labels()
-  ) %>%
-  cols_align(
-    align = "left",
-    columns = c("Persona")
-  ) %>%
-cols_align(
-    align = "right",
-    columns = -c("Persona")
-  ) %>%
-  opt_table_font(
-    font = list(
-      google_font(name = "Roboto Condensed")
-    )
-  ) |>
-tab_options(table.width = pct(80), data_row.padding = px(2))
-
+money_mngt_summary <- survey_design %>%
+  group_by(persona, engagement, money_mngt) %>%
+  summarise(prop = survey_prop()) %>%
+  filter(money_mngt == "Yes") %>%
+  select(-c(prop_se)) |>
+  pivot_wider(names_from = engagement, values_from = prop)
 
 ```
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+money_mngt_summary |>
+pivot_longer(cols = No:Yes, names_to = "User") |>
+ggplot(aes(x = persona, y = value, fill = User)) +
+  geom_bar(stat = 'identity', position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = label_percent()(round(value, 2))), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0.3, size = 3.5) +
+  labs(title = 'I know how to manage the little money I have to take care of my needs', 
+       x = 'Persona', 
+       y = 'Percent Score') +
+  scale_fill_manual(values = c('No' = 'darkgrey', 'Yes' = '#FA0005'))+
+scale_y_continuous(labels = scales::label_percent(accuracy = 1))
+```
 
 
 ```{r}
