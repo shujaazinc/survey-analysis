@@ -53,6 +53,7 @@ library(extrafont)
 library(likert)
 library(broom)
 library(prettyunits)
+library(tidytext)
 ```
 
 ```{r}
@@ -353,7 +354,8 @@ clean_data <- engagement_clean |>
                                             T_F1_1 == 1 ~ 1,
                                             TRUE ~ NA_integer_
                                           ), labels = c("No", "Yes")),
-                                          "I know how to manage the little money I have to take care of my needs")
+                                          "I know how to manage the little money I have to take care of my needs"),
+         challenge = gsub("[[:punct:]]", "", tolower(Q1_15))
   ) |>
   filter(!is.na(age_group))
   
@@ -636,7 +638,75 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
   ylim(0, y_limit)
 ```
 
+## Biggest change in your life in the past 12 months
 
+::: {.flex-container}
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 6
+#| fig-height: 4
+
+# Step 3: Tokenization
+tokens <- survey_data %>%
+select(challenge) %>%
+filter(!grepl("999", challenge))%>%
+  unnest_tokens(word, challenge)
+
+# Step 4: Remove stop words
+data(stop_words)
+tokens <- tokens %>%
+  anti_join(stop_words)
+
+# Step 5: Word frequency
+word_freq <- tokens %>%
+  count(word, sort = TRUE) |>
+mutate(word = str_to_sentence(word))
+
+# Step 6: Plot the most common words
+word_freq %>%
+  top_n(10) %>%
+  ggplot(aes(x = reorder(word, n), y = n)) +
+  geom_col(fill = "#FA0005") +
+  coord_flip() +
+  labs(title = "Most Common Words (top 10)", x = "Words", y = "Frequency")
+
+
+```
+
+</div>
+
+<div class="flex-item-50">
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 6
+#| fig-height: 4
+
+# Step 7: Sentiment Analysis
+sentiment <- tokens %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(sentiment) |>
+mutate(sentiment = str_to_sentence(sentiment))
+
+# Plot sentiment analysis
+sentiment %>%
+  ggplot(aes(x = sentiment, y = n, fill = sentiment)) +
+  geom_col() +
+  labs(title = "Sentiment Analysis", x = "Sentiment", y = "Count")
+
+```
+
+</div>
+
+:::
 
 
 # Media Consumption
