@@ -968,7 +968,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-This analysis is for all survey respondents.
+**71%** of the youth own a mobile phone. Of those that own a mobile phone, **76%** have at least one smartphone.
 :::
 
 ::: {.flex-container}
