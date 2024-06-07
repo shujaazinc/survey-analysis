@@ -491,7 +491,12 @@ survey_design <- survey_data |>
 
 # Demographic Characteristics
 
-## Overview
+## Sample characteristics
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Total sample size is 2,002 and includes a roughly equal number of female and male participants. The majority of participants are aged between 15-19 years. A larger proportion of participants reside in rural areas compared to urban areas. Most participants have completed primary education, with a significant number also having completed secondary education. Only a small proportion have an education level of secondary and above.
+:::
 
 ```{r}
 #| message: false
@@ -551,6 +556,11 @@ unweighted_summary_table
 
 ## Relationship status
 
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Majority of young people are either single or dating (93%).
+:::
+
 ```{r}
 #| echo: false
 #| message: false
@@ -594,6 +604,11 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 ## Own children
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Majority of the respondents do not have children of their own.
+:::
 
 ```{r}
 #| echo: false
@@ -639,6 +654,11 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 ## Biggest change in your life in the past 12 months
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Overall, majority of the respondents experienced a negative change in the past 12 months.
+:::
 
 ::: {.flex-container}
 
@@ -708,6 +728,124 @@ sentiment %>%
 
 :::
 
+## Issues concerned
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Over **60%** of the youth are **very concerned** about unemployment and economy.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# List of variables to process
+variables <- c("T_Q1_16_1", "T_Q1_16_2", "T_Q1_16_3", "T_Q1_16_4", "T_Q1_16_5", "T_Q1_16_6", "T_Q1_16_7", "T_Q1_16_8", "T_Q1_16_9")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q1_16_1" = "Terrorism",
+                     "T_Q1_16_2" = "Poverty",
+                     "T_Q1_16_3" = "Violence/war",
+                     "T_Q1_16_4" = "Unemployment",
+                     "T_Q1_16_5" = "Climate change",
+                     "T_Q1_16_6" = "Crime",
+                     "T_Q1_16_7" = "Economy",
+                     "T_Q1_16_8" = "Gender inequality",
+                     "T_Q1_16_9" = "Migration"
+                     )
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(!is.na(label))
+# 
+# y_limit <- max(combined_df$valid.prc) + 0.4 * max(combined_df$valid.prc)
+# # Plot using facet_wrap with shared axes
+# ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+#   geom_bar(stat = "identity", fill = "#FA0005") +
+#   geom_text(aes(label = label_text), hjust = -0.05) +
+#   coord_flip() +
+#   facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+#   ylim(0, 50)
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+
+bind_rows(viz_likert_percent, viz_likert_number) |>
+gt(rowname_col = "Data",
+groupname_col = "variable_title") %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+
+
+```
+
+
 
 # Media Consumption
 
@@ -715,7 +853,7 @@ sentiment %>%
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-This analysis is for all survey respondents.
+Most youth watch broadcast TV, watch movies, listen to radio, use internet and visit social networking sites.
 :::
 
 ```{r}
