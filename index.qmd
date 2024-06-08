@@ -1648,6 +1648,11 @@ awareness_summary_persona <- survey_design %>%
 
 ```
 
+::: {.note}
+<span class="info-icon">ℹ️</span>
+**`r comma(overall_aware_total)`** (**`r label_percent()(overall_aware_prop)`**) young people are aware of Shujaaz media.  These results include prompted and un-prompted reach.
+:::
+
 
 ::: {.flex-container}
 
@@ -1707,14 +1712,13 @@ labs(
 
 :::
 
-**`r comma(overall_aware_total)`** (**`r label_percent()(overall_aware_prop)`**) young people are aware of Shujaaz media.
 
-::: {.note}
-<span class="info-icon">ℹ️</span>
-These results include prompted and un-prompted.
-:::
 
 ## Reach by persona
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Brand awareness across all personas is largely similar (no significant differences).
+:::
 
 ```{r}
 #| echo: false
@@ -1760,14 +1764,14 @@ persona_awareness_test <- survey_design %>%
   )
 ```
 
-::: {.note}
-<span class="info-icon">ℹ️</span>
-Brand awareness across all personas was largely similar, as the differences were not statistically significant (p-value = 0.3294).
-:::
-
-
 
 ## Reach by location
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Brand awareness significantly varies by location.
+:::
+
 ```{r}
 #| echo: false
 #| message: false
@@ -1821,15 +1825,12 @@ ggplot(awareness_summary_location, aes(x=awareness, y=proportion, fill=Location)
 
 
 
+## Reach by county
+
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-There is strong evidence to suggest that brand awareness levels vary location (p-value < 0.001).
+Brand awareness varies significantly by county.
 :::
-
-
-
-
-## Reach by county
 
 ```{r}
 #| echo: false
@@ -1973,12 +1974,6 @@ create_awareness_table(awareness_table |> slice(23:43))
 :::
 
 
-::: {.note}
-<span class="info-icon">ℹ️</span>
-There is strong evidence that brand awareness levels vary by county (p-value < 0.001).
-:::
-
-
 # Engagement
 
 ## Overall engagement 
@@ -2021,6 +2016,12 @@ engagement_summary_persona <- survey_design %>%
 
 
 ```
+
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+**`r comma(overall_engaged_total)`** (**`r label_percent()(overall_engaged_prop)`**) young people have ever engaged with Shujaaz brand.
+:::
 
 
 ::: {.flex-container}
@@ -2081,14 +2082,14 @@ labs(
 
 :::
 
-**`r comma(overall_engaged_total)`** (**`r label_percent()(overall_engaged_prop)`**) young people have ever engaged with Shujaaz brand.
+
+## Engagement by persona
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-These results include those aware and not aware of Shujaaz brand.
+Brand engagement across all personas is largely similar.
 :::
 
-## Engagement by persona
 
 ```{r}
 #| echo: false
@@ -2134,13 +2135,14 @@ persona_engagement_test <- survey_design %>%
 ```
 
 
+## Engagement by location
+
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-Brand engagement across all personas was largely similar, as the differences were not statistically significant (p-value = 0.4605).
+Brand engagement significantly varies by location.
 :::
 
 
-## Engagement by location
 ```{r}
 #| echo: false
 #| message: false
@@ -2194,13 +2196,13 @@ ggplot(engagement_summary_location, aes(x=engagement, y=proportion, fill=Locatio
 
 
 
+## Engagement by county
+
+
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-There is strong evidence to suggest that brand engagement levels vary by location (p-value < 0.001).
+Brand engagement significantly varies by county.
 :::
-
-
-## Engagement by county
 
 ```{r}
 #| echo: false
@@ -2344,26 +2346,22 @@ create_engagement_table(engagement_table |> slice(22:43))
 :::
 
 
-::: {.note}
-<span class="info-icon">ℹ️</span>
-There is strong evidence that brand engagement levels vary by county (p-value < 0.001).
-:::
-
-
 
 ## Media usage
+
+
+### Reading Comic
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-For this analysis, respondents were asked about the frequency using Shujaaz media across various platforms. Those who refused or dont know are included in the calculations but excluded from the visuals.
+Only about **72,000** youth read the comic every single day.
 :::
-
-### Comic
 
 ```{r}
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 3
+#| fig-height: 4
+#| fig-width: 8
 
 
 # List of variables to process
@@ -2403,7 +2401,67 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 ```
 
+### Maria kim, Malkia, Charlie Pele, Shujaaz Biz
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Only about **10,000** youth use Maria Kim's Meta pages ever single day.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# List of variables to process
+variables <- c("T_Q3_6_16", "T_Q3_6_13", "T_Q3_6_14","T_Q3_6_15" )
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_16" = "Shujaaz Biz Facebook",
+"T_Q3_6_13" = "Maria Kim's Facebook and/or Instagram", 
+"T_Q3_6_14" = "Malkia’s Facebook and/or Instagram",
+"T_Q3_6_15" = "Charlie Pele’s Facebook and/or Instagram")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, y_limit)
+
+
+```
+
 ### Watched STRA
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+About **19,000** youth watch STRA at once a week.
+:::
 
 ```{r}
 #| echo: false
@@ -2453,6 +2511,11 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 
 ### Shujaaz Kenya
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Shujaaz Kenya has at least 8,000 daily users in Facebook and YouTube.
+:::
 
 ```{r}
 #| echo: false
@@ -2504,54 +2567,12 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 
-### Shujaaz Biz
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-height: 3
-
-
-# List of variables to process
-variables <- c("T_Q3_6_16")
-
-# Mapping variable names to readable titles
-variable_titles <- c("T_Q3_6_16" = "Shujaaz Biz Facebook")
-
-# Function to process each variable and return a data frame
-process_variable <- function(variable) {
-  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
-  frq_df <- as.data.frame(frq_result[[1]])
-  N <- frq_result[[1]]$n.valid[1] # Extract N
-  frq_df %>%
-    filter(!is.na(val)) %>%
-    mutate(variable = variable, N = N) # Add columns for the variable name and N
-}
-
-
-# Combine data for all variables
-combined_df <- map_dfr(variables, process_variable)
-
-# Create a column for the combined percentage and N label
-combined_df <- combined_df %>%
-  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
-filter(label != "DK/Refused")
-
-y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
-
-# Plot using facet_wrap with shared axes
-ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
-  geom_bar(stat = "identity", fill = "#FA0005") +
-  geom_text(aes(label = label_text), hjust = -0.05) +
-  coord_flip() +
-  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
-  ylim(0, y_limit)
-
-
-```
-
 ### SMS Usage
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Approximately, there are no daily users of of the SMS.
+:::
 
 ```{r}
 #| echo: false
@@ -2598,156 +2619,20 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 ```
 
-### Maria Kim
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-height: 3
-
-
-# List of variables to process
-variables <- c("T_Q3_6_13")
-
-# Mapping variable names to readable titles
-variable_titles <- c("T_Q3_6_13" = "Maria Kim's Facebook and/or Instagram")
-
-# Function to process each variable and return a data frame
-process_variable <- function(variable) {
-  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
-  frq_df <- as.data.frame(frq_result[[1]])
-  N <- frq_result[[1]]$n.valid[1] # Extract N
-  frq_df %>%
-    filter(!is.na(val)) %>%
-    mutate(variable = variable, N = N) # Add columns for the variable name and N
-}
-
-
-# Combine data for all variables
-combined_df <- map_dfr(variables, process_variable)
-
-# Create a column for the combined percentage and N label
-combined_df <- combined_df %>%
-  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
-filter(label != "DK/Refused")
-
-y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
-
-# Plot using facet_wrap with shared axes
-ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
-  geom_bar(stat = "identity", fill = "#FA0005") +
-  geom_text(aes(label = label_text), hjust = -0.05) +
-  coord_flip() +
-  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
-  ylim(0, y_limit)
-
-
-```
-
-
-### Malkia
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-height: 3
-
-
-# List of variables to process
-variables <- c("T_Q3_6_14")
-
-# Mapping variable names to readable titles
-variable_titles <- c("T_Q3_6_14" = "Malkia’s Facebook and/or Instagram")
-
-# Function to process each variable and return a data frame
-process_variable <- function(variable) {
-  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
-  frq_df <- as.data.frame(frq_result[[1]])
-  N <- frq_result[[1]]$n.valid[1] # Extract N
-  frq_df %>%
-    filter(!is.na(val)) %>%
-    mutate(variable = variable, N = N) # Add columns for the variable name and N
-}
-
-
-# Combine data for all variables
-combined_df <- map_dfr(variables, process_variable)
-
-# Create a column for the combined percentage and N label
-combined_df <- combined_df %>%
-  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
-filter(label != "DK/Refused")
-
-y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
-
-# Plot using facet_wrap with shared axes
-ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
-  geom_bar(stat = "identity", fill = "#FA0005") +
-  geom_text(aes(label = label_text), hjust = -0.05) +
-  coord_flip() +
-  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
-  ylim(0, y_limit)
-
-
-```
-
-
-### Charlie Pele
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-height: 3
-
-
-# List of variables to process
-variables <- c("T_Q3_6_15")
-
-# Mapping variable names to readable titles
-variable_titles <- c("T_Q3_6_15" = "Charlie Pele’s Facebook and/or Instagram")
-
-# Function to process each variable and return a data frame
-process_variable <- function(variable) {
-  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
-  frq_df <- as.data.frame(frq_result[[1]])
-  N <- frq_result[[1]]$n.valid[1] # Extract N
-  frq_df %>%
-    filter(!is.na(val)) %>%
-    mutate(variable = variable, N = N) # Add columns for the variable name and N
-}
-
-
-# Combine data for all variables
-combined_df <- map_dfr(variables, process_variable)
-
-# Create a column for the combined percentage and N label
-combined_df <- combined_df %>%
-  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")")) |>
-filter(label != "DK/Refused")
-
-y_limit <- max(combined_df$valid.prc) + 0.5 * max(combined_df$valid.prc)
-
-# Plot using facet_wrap with shared axes
-ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
-  geom_bar(stat = "identity", fill = "#FA0005") +
-  geom_text(aes(label = label_text), hjust = -0.05) +
-  coord_flip() +
-  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
-  ylim(0, y_limit)
-
-
-```
 
 
 ### DJB
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Approximately, over **6,000** youth use DJB's Twitter, Instagram and WhatsApp every day. Over **14,000** use all DJB's platforms once a week.
+:::
+
 ```{r}
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 4
+#| fig-height: 5
 #| fig-width: 10
 
 # List of variables to process
