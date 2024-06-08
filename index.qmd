@@ -714,13 +714,13 @@ word_freq %>%
 sentiment <- tokens %>%
   inner_join(get_sentiments("bing")) %>%
   count(sentiment) |>
-mutate(sentiment = str_to_sentence(sentiment))
+mutate(Sentiment = str_to_sentence(sentiment))
 
 # Plot sentiment analysis
 sentiment %>%
-  ggplot(aes(x = sentiment, y = n, fill = sentiment)) +
+  ggplot(aes(x = sentiment, y = n, fill = Sentiment)) +
   geom_col() +
-  labs(title = "Sentiment Analysis", x = "Sentiment", y = "Count")
+  labs(title = "Sentiment Analysis", x = "Sentiment", y = "Count") 
 
 ```
 
@@ -728,7 +728,7 @@ sentiment %>%
 
 :::
 
-## Issues concerned
+## Concerning issues
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
@@ -794,10 +794,11 @@ filter(!is.na(label))
 #| message: false
 #| warning: false
 #| fig-height: 4
-#| fig-width: 10
+#| fig-width: 8
 
 viz_likert_percent <- combined_df %>%
   select(variable_title, label, valid.prc) %>%
+mutate(valid.prc = valid.prc / 100) %>%
   pivot_wider(
     names_from = label,
     values_from = valid.prc
@@ -812,9 +813,74 @@ viz_likert_number <- combined_df %>%
   )  |>
 mutate(Data = "Number")
 
-bind_rows(viz_likert_percent, viz_likert_number) |>
-gt(rowname_col = "Data",
-groupname_col = "variable_title") %>%
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 8
+
+viz_likert_percent |>
+rename(Issue = variable_title) %>%
+select(-c("Data", "DK/Refused")) %>%
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+cols_align(
+    align = "left",
+    columns = c("Issue")
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Issue")
+  ) %>%
+data_color(
+columns = -c("Issue"),
+method = "numeric",
+palette = "ggsci::red_material"
+) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+tab_options(table.width = pct(80), data_row.padding = px(1))
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 8
+
+viz_likert_number |>
+rename(Issue = variable_title) %>%
+select(-c("Data", "DK/Refused")) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
     locations = cells_body()
@@ -830,24 +896,31 @@ fmt_number(
     ),
     locations = cells_column_labels()
   ) %>%
+cols_align(
+    align = "left",
+    columns = c("Issue")
+  ) %>%
   cols_align(
     align = "right",
-    columns = everything()
+    columns = -c("Issue")
   ) %>%
+data_color(
+columns = -c("Issue"),
+method = "numeric",
+palette = "ggsci::red_material"
+) %>%
   opt_table_font(
     font = list(
       google_font(name = "Roboto Condensed")
     )
   ) |>
-tab_options(table.width = pct(100), data_row.padding = px(1))
-
-
+tab_options(table.width = pct(80), data_row.padding = px(1))
 
 ```
 
 
 
-# Media Consumption
+# General Media Consumption
 
 ## Consumption Frequency
 
