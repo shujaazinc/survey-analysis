@@ -1,4 +1,5 @@
 ---
+title: "Shujaaz Inc"
 format:
   html:
     page-layout: full
