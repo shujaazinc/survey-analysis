@@ -1109,7 +1109,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-**71%** of the youth own a mobile phone. Of those that own a mobile phone, **76%** have at least one smartphone.
+**71%** of the youth own a mobile phone. Of those that own a mobile phone, **80%** have at least one smartphone.
 :::
 
 ::: {.flex-container}
@@ -1264,6 +1264,295 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 </div>
 
 :::
+
+
+## Times Youth Go Online
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The most common times youth go online is **6pm - 10pm** and **10pm - 2pm**
+:::
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q2_7_O2", "Q2_7_O3")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q2_7_O2" = "First Choice",
+                     "Q2_7_O3" = "Second Choice"
+)
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, 50)
+
+```
+
+
+## Favourite Activities
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The most common first choice activities youth do online include looking for entertainment, check what is new with friends, and posting personal pictures.
+:::
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q2_9_O1", "Q2_9_O2")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q2_9_O1" = "First Choice",
+                     "Q2_9_O2" = "Second Choice"
+)
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, 50)
+
+```
+
+## Platform visit frequency
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Majority of youth visit WhatsApp, Facebook, Instagram and Tiktok at least once a day.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# List of variables to process
+variables <- c("T_Q2_12_1", "T_Q2_12_2", "T_Q2_12_3", "T_Q2_12_4", "T_Q2_12_5", "T_Q2_12_6", "T_Q2_12_7")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q2_12_1" = "Facebook",
+                     "T_Q2_12_2" = "X",
+                     "T_Q2_12_3" = "Instagram",
+                     "T_Q2_12_4" = "YouTube",
+                     "T_Q2_12_5" = "TikTok",
+                     "T_Q2_12_6" = "WhatsApp",
+                     "T_Q2_12_7" = "WhatsApp Business"
+                     )
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(!is.na(label))
+# 
+# y_limit <- max(combined_df$valid.prc) + 0.4 * max(combined_df$valid.prc)
+# # Plot using facet_wrap with shared axes
+# ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+#   geom_bar(stat = "identity", fill = "#FA0005") +
+#   geom_text(aes(label = label_text), hjust = -0.05) +
+#   coord_flip() +
+#   facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+#   ylim(0, 50)
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  mutate(valid.prc = valid.prc / 100) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_number %>%
+select(-c("Data")) %>%
+rename("Platform" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Platform"),
+method = "numeric",
+palette = "ggsci::red_material"
+)%>%
+tab_options(table.width = pct(90), data_row.padding = px(1))
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_percent %>%
+select(-c("Data")) %>%
+rename("Platform" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Platform"),
+method = "numeric",
+palette = "ggsci::red_material"
+)%>%
+tab_options(table.width = pct(90), data_row.padding = px(1))
+
+```
+
+
 
 
 # Reach
