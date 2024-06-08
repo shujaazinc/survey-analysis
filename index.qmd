@@ -733,7 +733,7 @@ sentiment %>%
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-Over **60%** of the youth are **very concerned** about unemployment and economy.
+The bulk of youth are very concerned about unemployment and the economy.
 :::
 
 ```{r}
@@ -816,7 +816,6 @@ mutate(Data = "Number")
 
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -824,18 +823,18 @@ mutate(Data = "Number")
 #| fig-height: 4
 #| fig-width: 8
 
-viz_likert_percent |>
+viz_likert_number |>
 rename(Issue = variable_title) %>%
 select(-c("Data", "DK/Refused")) %>%
 gt() %>%
 tab_header(
-    title = "Percentage"
+    title = "Absolute Number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
     locations = cells_body()
   ) %>%
-fmt_percent(
+fmt_number(
       columns = everything(),
       decimals = 0,
       use_seps = TRUE
@@ -868,6 +867,8 @@ tab_options(table.width = pct(80), data_row.padding = px(1))
 
 ```
 
+
+
 ```{r}
 #| echo: false
 #| message: false
@@ -875,18 +876,18 @@ tab_options(table.width = pct(80), data_row.padding = px(1))
 #| fig-height: 4
 #| fig-width: 8
 
-viz_likert_number |>
+viz_likert_percent |>
 rename(Issue = variable_title) %>%
 select(-c("Data", "DK/Refused")) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Percentage"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
     locations = cells_body()
   ) %>%
-fmt_number(
+fmt_percent(
       columns = everything(),
       decimals = 0,
       use_seps = TRUE
@@ -1007,6 +1008,52 @@ viz_likert_number <- combined_df %>%
 mutate(Data = "Number")
 ```
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_number %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
 
 ```{r}
 #| echo: false
@@ -1055,54 +1102,6 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ```
 
-
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-height: 4
-#| fig-width: 10
-
-viz_likert_number %>%
-select(-c("Data")) %>%
-rename("Media Type" = variable_title) %>%
-gt() %>%
-tab_header(
-    title = "Absolute Number"
-  )%>%
-  tab_style(
-    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
-    locations = cells_body()
-  ) %>%
-fmt_number(
-      columns = everything(),
-      decimals = 0,
-      use_seps = TRUE
-    ) %>%
-  tab_style(
-    style = list(
-      cell_text(weight = "bold", size = px(16))
-    ),
-    locations = cells_column_labels()
-  ) %>%
-  cols_align(
-    align = "right",
-    columns = everything()
-  ) %>%
-  opt_table_font(
-    font = list(
-      google_font(name = "Roboto Condensed")
-    )
-  ) %>%
-data_color(
-columns = -c("Media Type"),
-method = "numeric",
-palette = "ggsci::red_material"
-)%>%
-tab_options(table.width = pct(100), data_row.padding = px(1))
-
-```
 
 
 ## Mobile phone ownership
@@ -1278,7 +1277,7 @@ The most common times youth go online is **6pm - 10pm** and **10pm - 2pm**
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -1332,7 +1331,7 @@ The most common first choice activities youth do online include looking for ente
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -1553,7 +1552,58 @@ tab_options(table.width = pct(90), data_row.padding = px(1))
 ```
 
 
+## Platform Ranking
 
+::: {.note}
+<span class="info-icon">ℹ️</span>
+WhatsApp, Facebook, Instagram and Tiktok are the first choice most important platforms.
+:::
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q2_14_O3", "Q2_14_O4")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q2_14_O3" = "First Choice",
+                     "Q2_14_O4" = "Second Choice"
+)
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, 50)
+
+```
 
 # Reach
 
@@ -1830,10 +1880,11 @@ data %>%
   # tab_header(
   #   title = "Awareness by County"
   # ) %>%
-  data_color(
-    columns = c(`% Aware`),
-    colors = color_fill
-  ) %>%
+data_color(
+columns = c("% Aware"),
+method = "numeric",
+palette = "ggsci::red_material"
+) %>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
     locations = cells_body()
@@ -2200,10 +2251,11 @@ data %>%
   # tab_header(
   #   title = "Awareness by County"
   # ) %>%
-  data_color(
-    columns = c(`% Engaged`),
-    colors = color_fill
-  ) %>%
+data_color(
+columns = c("% Engaged"),
+method = "numeric",
+palette = "ggsci::red_material"
+) %>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
     locations = cells_body()
@@ -2406,7 +2458,7 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -2695,7 +2747,7 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -2754,7 +2806,7 @@ The chart below is for all personas who have ever engaged with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -2818,7 +2870,7 @@ Neutral.color = "grey90")
 
 
 viz_likert %>%
-rename(Indicator = Item) |>
+rename(Indicator = Item) %>%
   gt() %>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -2847,7 +2899,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -2863,7 +2926,7 @@ The chart below is for all Barasa ever engaged with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -2956,7 +3019,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -2974,7 +3048,7 @@ The chart below is for all Boni ever engaged with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3067,7 +3141,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3084,7 +3169,7 @@ The chart below is for all Nana ever engaged with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3177,7 +3262,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3193,7 +3289,7 @@ The chart below is for all Nina ever engaged with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3286,7 +3382,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3304,7 +3411,7 @@ The chart below is for all personas who have **Never engaged** with Shujaaz medi
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3397,7 +3504,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3413,7 +3531,7 @@ The chart below is for all Barasa **Never engaged** with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3506,7 +3624,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3524,7 +3653,7 @@ The chart below is for all Boni **Never engaged** with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3617,7 +3746,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3634,7 +3774,7 @@ The chart below is for all Nana **Never engaged** with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3727,7 +3867,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3743,7 +3894,7 @@ The chart below is for all Nina **Never engaged** with Shujaaz media.
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 # List of variables to process
@@ -3836,7 +3987,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  )%>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3848,7 +4010,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 
@@ -3898,9 +4060,6 @@ indicator = description)
 }
 
 
-
-
-
 ```
 
 
@@ -3908,7 +4067,7 @@ indicator = description)
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 10
 
 
@@ -3958,7 +4117,18 @@ cols_align(
     font = list(
       google_font(name = "Roboto Condensed")
     )
-  ) |>
+  ) %>%
+data_color(
+columns = -c("Persona"),
+method = "numeric",
+palette = "ggsci::red_material",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Persona"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
@@ -3969,8 +4139,6 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 ## Money Management
 
-**Question :** I know how to manage the little money I have to take care of my needs.
-
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 **65%** of young people who have ever used Shujaaz media manage their money well, compared to **53%** for those who have never (P value `r pretty_p_value(5.387e-07)`).
@@ -3980,7 +4148,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 8
 
 money_mngt_overall<- survey_design %>%
@@ -4003,7 +4171,7 @@ money_mngt_persona<- survey_design %>%
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
+#| fig-height: 4
 #| fig-width: 8
 #| results: hide
 
