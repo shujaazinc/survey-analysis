@@ -25,7 +25,6 @@ format:
         </div>
 ---
 
-
 ```{r}
 #| message: false
 #| results: hide
@@ -87,7 +86,6 @@ theme_set(
           axis.title.y = element_blank())
 )
 ```
-
 
 ```{r}
 #| message: false
@@ -153,7 +151,6 @@ awareness_clean <- binarize_awareness(raw_23, awareness_vars) %>%
   
   
 ```
-
 
 ```{r}
 #| message: false
@@ -251,7 +248,6 @@ engagement_clean <- binarize_engagement(awareness_clean, engagement_vars) %>%
   
 ```
 
-
 ```{r}
 #| message: false
 #| results: hide
@@ -275,7 +271,6 @@ engagement_clean <-engagement_clean %>%
          )
 
 ```
-
 
 ```{r}
 #| message: false
@@ -362,8 +357,6 @@ clean_data <- engagement_clean |>
   
 
 ```
-
-
 
 ```{r}
 #| message: false
@@ -490,6 +483,7 @@ survey_design <- survey_data |>
 ```
 
 
+
 # Demographic Characteristics
 
 ## Sample characteristics
@@ -498,6 +492,7 @@ survey_design <- survey_data |>
 <span class="info-icon">ℹ️</span>
 Total sample size is 2,002 and includes a roughly equal number of female and male participants. The majority of participants are aged between 15-19 years. A larger proportion of participants reside in rural areas compared to urban areas. Most participants have completed primary education, with a significant number also having completed secondary education. Only a small proportion have an education level of secondary and above.
 :::
+
 
 ```{r}
 #| message: false
@@ -555,12 +550,14 @@ unweighted_summary_table <- survey_data %>%
 unweighted_summary_table
 ```
 
+
 ## Relationship status
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Majority of young people are either single or dating (93%).
 :::
+
 
 ```{r}
 #| echo: false
@@ -604,12 +601,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
   ylim(0, y_limit)
 ```
 
+
 ## Own children
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Majority of the respondents do not have children of their own.
 :::
+
 
 ```{r}
 #| echo: false
@@ -654,6 +653,7 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
   ylim(0, y_limit)
 ```
 
+
 ## Biggest change in your life in the past 12 months
 
 ::: {.note}
@@ -664,6 +664,7 @@ Overall, majority of the respondents experienced a negative change in the past 1
 ::: {.flex-container}
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -699,9 +700,11 @@ word_freq %>%
 
 ```
 
+
 </div>
 
 <div class="flex-item-50">
+
 
 
 ```{r}
@@ -726,6 +729,7 @@ sentiment %>%
 
 ```
 
+
 </div>
 
 :::
@@ -736,6 +740,7 @@ sentiment %>%
 <span class="info-icon">ℹ️</span>
 The bulk of youth are very concerned about unemployment and the economy.
 :::
+
 
 ```{r}
 #| echo: false
@@ -789,7 +794,6 @@ filter(!is.na(label))
 #   facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
 #   ylim(0, 50)
 ```
-
 
 ```{r}
 #| echo: false
@@ -868,8 +872,6 @@ tab_options(table.width = pct(80), data_row.padding = px(1))
 
 ```
 
-
-
 ```{r}
 #| echo: false
 #| message: false
@@ -923,6 +925,7 @@ tab_options(table.width = pct(80), data_row.padding = px(1))
 
 
 
+
 # General Media Consumption
 
 ## Consumption Frequency
@@ -931,6 +934,7 @@ tab_options(table.width = pct(80), data_row.padding = px(1))
 <span class="info-icon">ℹ️</span>
 Most youth watch broadcast TV, watch movies, listen to radio, use internet and visit social networking sites.
 :::
+
 
 ```{r}
 #| echo: false
@@ -982,7 +986,6 @@ filter(!is.na(label))
 #   facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
 #   ylim(0, 50)
 ```
-
 
 ```{r}
 #| echo: false
@@ -1105,6 +1108,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 
 
+
 ## Mobile phone ownership
 
 ::: {.note}
@@ -1115,6 +1119,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 ::: {.flex-container}
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -1155,6 +1160,7 @@ labs(
   )
 ```
 
+
 - Basic phone – only allows calling, messaging, saving numbers
 - Feature phone – has camera, radio, basic internet
 - Smartphone – has a touch screen, mobile applications, e.g., WhatsApp, Instagram, TikTok
@@ -1164,6 +1170,7 @@ labs(
 </div>
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -1261,6 +1268,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ```
 
+
 </div>
 
 :::
@@ -1272,6 +1280,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 <span class="info-icon">ℹ️</span>
 The most common times youth go online is **6pm - 10pm** and **10pm - 2pm**
 :::
+
 
 
 ```{r}
@@ -1320,12 +1329,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 
+
 ## Favourite Activities
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The most common first choice activities youth do online include looking for entertainment, check what is new with friends, and posting personal pictures.
 :::
+
 
 
 ```{r}
@@ -1373,12 +1384,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 ```
 
+
 ## Platform visit frequency
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Majority of youth visit WhatsApp, Facebook, Instagram and Tiktok at least once a day.
 :::
+
 
 ```{r}
 #| echo: false
@@ -1431,7 +1444,6 @@ filter(!is.na(label))
 #   ylim(0, 50)
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -1456,7 +1468,6 @@ viz_likert_number <- combined_df %>%
   )  |>
 mutate(Data = "Number")
 ```
-
 
 ```{r}
 #| echo: false
@@ -1553,12 +1564,14 @@ tab_options(table.width = pct(90), data_row.padding = px(1))
 ```
 
 
+
 ## Platform Ranking
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 WhatsApp, Facebook, Instagram and Tiktok are the first choice most important platforms.
 :::
+
 
 
 ```{r}
@@ -1607,12 +1620,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 
+
 ## Media perception
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 In general, young people think that media content is relatable, understandable, and inspiring
 :::
+
 
 ```{r}
 #| echo: false
@@ -1677,6 +1692,7 @@ Neutral.color = "grey90")
 
 
 
+
 # Shujaaz awareness
 
 ## Character Awareness
@@ -1684,6 +1700,7 @@ Neutral.color = "grey90")
 <span class="info-icon">ℹ️</span>
 Character awareness varies significantly.
 :::
+
 
 ```{r}
 #| echo: false
@@ -1748,7 +1765,9 @@ column_sums <- colSums(test_data, na.rm = TRUE)
 
 
 
+
 ### Overall reach
+
 
 ```{r}
 #| echo: false
@@ -1789,6 +1808,7 @@ awareness_summary_persona <- survey_design %>%
 
 ```
 
+
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 **`r comma(overall_aware_total)`** (**`r label_percent()(overall_aware_prop)`**) young people are aware of Shujaaz media.  These results include prompted and un-prompted reach.
@@ -1798,6 +1818,7 @@ awareness_summary_persona <- survey_design %>%
 ::: {.flex-container}
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -1822,9 +1843,11 @@ labs(
   )
 ```
 
+
 </div>
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -1849,6 +1872,7 @@ labs(
   )
 ```
 
+
 </div>
 
 :::
@@ -1860,6 +1884,7 @@ labs(
 <span class="info-icon">ℹ️</span>
 Brand awareness across all personas is largely similar (no significant differences).
 :::
+
 
 ```{r}
 #| echo: false
@@ -1888,7 +1913,6 @@ ggplot(aes(x = persona, y = proportion,
   ) 
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -1906,12 +1930,14 @@ persona_awareness_test <- survey_design %>%
 ```
 
 
+
 ## Reach by location
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Brand awareness significantly varies by location.
 :::
+
 
 ```{r}
 #| echo: false
@@ -1931,7 +1957,6 @@ rename(Location = location) |>
 ungroup()
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -1947,7 +1972,6 @@ location_awareness_test <- survey_design %>%
     na.rm = TRUE
   )
 ```
-
 
 ```{r}
 #| echo: false
@@ -1966,12 +1990,14 @@ ggplot(awareness_summary_location, aes(x=awareness, y=proportion, fill=Location)
 
 
 
+
 ## Reach by county
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Brand awareness varies significantly by county.
 :::
+
 
 ```{r}
 #| echo: false
@@ -1990,7 +2016,6 @@ awareness_summary_county <- survey_design %>%
 rename(County = county_name) |>
 ungroup()
 ```
-
 
 ```{r}
 #| echo: false
@@ -2068,7 +2093,6 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -2086,9 +2110,11 @@ county_awareness_test <- survey_design %>%
 ```
 
 
+
 ::: {.flex-container}
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -2098,9 +2124,11 @@ county_awareness_test <- survey_design %>%
 create_awareness_table(awareness_table |> slice(1:22))
 ```
 
+
 </div>
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -2110,6 +2138,7 @@ create_awareness_table(awareness_table |> slice(1:22))
 create_awareness_table(awareness_table |> slice(23:43))
 ```
 
+
 </div>
 
 :::
@@ -2118,6 +2147,7 @@ create_awareness_table(awareness_table |> slice(23:43))
 # Shujaaz Media usage
 
 ## Overall engagement 
+
 
 ```{r}
 #| echo: false
@@ -2159,6 +2189,7 @@ engagement_summary_persona <- survey_design %>%
 ```
 
 
+
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 **`r comma(overall_engaged_total)`** (**`r label_percent()(overall_engaged_prop)`**) young people have ever engaged with Shujaaz brand.
@@ -2168,6 +2199,7 @@ engagement_summary_persona <- survey_design %>%
 ::: {.flex-container}
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -2192,9 +2224,11 @@ labs(
   )
 ```
 
+
 </div>
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -2219,6 +2253,7 @@ labs(
   )
 ```
 
+
 </div>
 
 :::
@@ -2230,6 +2265,7 @@ labs(
 <span class="info-icon">ℹ️</span>
 Brand engagement across all personas is largely similar.
 :::
+
 
 
 ```{r}
@@ -2276,12 +2312,14 @@ persona_engagement_test <- survey_design %>%
 ```
 
 
+
 ## Engagement by location
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Brand engagement significantly varies by location.
 :::
+
 
 
 ```{r}
@@ -2302,7 +2340,6 @@ rename(Location = location) |>
 ungroup()
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -2318,7 +2355,6 @@ location_engagement_test <- survey_design %>%
     na.rm = TRUE
   )
 ```
-
 
 ```{r}
 #| echo: false
@@ -2337,6 +2373,7 @@ ggplot(engagement_summary_location, aes(x=engagement, y=proportion, fill=Locatio
 
 
 
+
 ## Engagement by county
 
 
@@ -2344,6 +2381,7 @@ ggplot(engagement_summary_location, aes(x=engagement, y=proportion, fill=Locatio
 <span class="info-icon">ℹ️</span>
 Brand engagement significantly varies by county.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2362,7 +2400,6 @@ engagement_summary_county <- survey_design %>%
 rename(County = county_name) |>
 ungroup()
 ```
-
 
 ```{r}
 #| echo: false
@@ -2440,7 +2477,6 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -2458,9 +2494,11 @@ county_engagement_test <- survey_design %>%
 ```
 
 
+
 ::: {.flex-container}
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -2470,9 +2508,11 @@ county_engagement_test <- survey_design %>%
 create_engagement_table(engagement_table |> slice(1:21))
 ```
 
+
 </div>
 
 <div class="flex-item-50">
+
 
 ```{r}
 #| echo: false
@@ -2481,6 +2521,7 @@ create_engagement_table(engagement_table |> slice(1:21))
 
 create_engagement_table(engagement_table |> slice(22:43))
 ```
+
 
 </div>
 
@@ -2496,6 +2537,7 @@ create_engagement_table(engagement_table |> slice(22:43))
 <span class="info-icon">ℹ️</span>
 Only about **72,000** youth read the comic every single day.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2542,12 +2584,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 ```
 
+
 ### Maria kim, Malkia, Charlie Pele, Shujaaz Biz
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Only about **10,000** youth use Maria Kim's Meta pages ever single day.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2597,12 +2641,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 ```
 
+
 ### Watched STRA
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 About **19,000** youth watch STRA at once a week.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2651,12 +2697,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 
 
+
 ### Shujaaz Kenya
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Shujaaz Kenya has at least 8,000 daily users in Facebook and YouTube.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2708,12 +2756,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 
+
 ### SMS Usage
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Approximately, there are no daily users of of the SMS.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2762,12 +2812,14 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 
 
+
 ### DJB
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 Approximately, over **6,000** youth use DJB's Twitter, Instagram and WhatsApp every day. Over **14,000** use all DJB's platforms once a week.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2816,6 +2868,7 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 ```
 
+
 # Agency Models
 
 ## Sense of self-belief
@@ -2827,6 +2880,7 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 <span class="info-icon">ℹ️</span>
 The chart below is for all personas who have ever engaged with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -2888,7 +2942,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -2941,12 +2994,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
+
 #### Barasa
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Barasa ever engaged with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3008,7 +3063,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3063,12 +3117,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
+
 #### Boni
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Boni ever engaged with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3130,7 +3186,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3184,12 +3239,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
+
 #### Nana
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Nana ever engaged with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3251,7 +3308,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3304,12 +3360,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
+
 #### Nina
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Nina ever engaged with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3371,7 +3429,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3424,6 +3481,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
+
 ### Non-users
 
 #### All personas
@@ -3432,6 +3490,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 <span class="info-icon">ℹ️</span>
 The chart below is for all personas who have **Never engaged** with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3493,7 +3552,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3546,12 +3604,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
+
 #### Barasa
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Barasa **Never engaged** with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3613,7 +3673,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3668,12 +3727,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
+
 #### Boni
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Boni **Never engaged** with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3735,7 +3796,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3789,12 +3849,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
+
 #### Nana
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Nana **Never engaged** with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3856,7 +3918,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -3909,12 +3970,14 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
+
 #### Nina
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
 The chart below is for all Nina **Never engaged** with Shujaaz media.
 :::
+
 
 ```{r}
 #| echo: false
@@ -3976,7 +4039,6 @@ Neutral.color.ramp = "white",
 Neutral.color = "grey90")
 ```
 
-
 ```{r}
 #| echo: false
 #| message: false
@@ -4029,7 +4091,9 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
 
+
 ## Optimistic about future
+
 
 
 ```{r}
@@ -4087,7 +4151,6 @@ indicator = description)
 
 
 ```
-
 
 ```{r}
 #| echo: false
@@ -4161,6 +4224,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
+
 # Money
 
 ## Money Management
@@ -4169,6 +4233,7 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 <span class="info-icon">ℹ️</span>
 **65%** of young people who have ever used Shujaaz media manage their money well, compared to **53%** for those who have never (P value `r pretty_p_value(5.387e-07)`).
 :::
+
 
 ```{r}
 #| echo: false
@@ -4225,8 +4290,6 @@ res <- if(chi_square_test$p.value < 0.05) {
 }
 ```
 
-
-
 ```{r}
 #| echo: false
 #| message: false
@@ -4249,7 +4312,4 @@ scale_y_continuous(labels = scales::label_percent(accuracy = 1))
 
 
 ```
-
-
-
 
