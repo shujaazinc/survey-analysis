@@ -2789,7 +2789,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -2909,7 +2909,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3031,7 +3031,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3152,7 +3152,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3272,7 +3272,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3394,7 +3394,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3514,7 +3514,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3636,7 +3636,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3757,7 +3757,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -3877,7 +3877,7 @@ cols_align(
 data_color(
 columns = -c("Indicator"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
@@ -4007,7 +4007,7 @@ cols_align(
 data_color(
 columns = -c("Persona"),
 method = "numeric",
-palette = "ggsci::red_material",
+palette = "red",
 apply_to = c("text"),
 direction = c("row")
 )%>%
