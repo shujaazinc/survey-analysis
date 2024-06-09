@@ -1606,9 +1606,149 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 
 ```
 
-# Reach
 
-## Overall reach
+## Media perception
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+In general, young people think that media content is relatable, understandable, and inspiring
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q2_15_1", "T_Q2_15_2", "T_Q2_15_3", "T_Q2_15_4")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q2_15_1" = "People/characters are inspiring",
+                     "T_Q2_15_2" = "People/characters resemble people I know – my friends, classmates, etc.",
+                     "T_Q2_15_3" = "People/characters speak the same language as an average young Kenyan",
+                     "T_Q2_15_4" = "People/characters are shown in life situations that are familiar to me")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `DK/Refused`,
+Disagree = `Somewhat disagree`,
+Agree = `Somewhat Agree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+
+
+
+
+## Shujaaz awareness
+
+## Character Awareness
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Character awareness varies significantly.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+# List of variables to process
+variables <- c("T_Q3_1_1", "T_Q3_1_2", "T_Q3_1_3", "T_Q3_1_4")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_1_1" = "DJ Boyie",
+                     "T_Q3_1_2" = "Maria Kim",
+                     "T_Q3_1_3" = "Charlie Pele",
+                     "T_Q3_1_4" = "Malkia")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> 
+    frq(variable, weights = base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+aware_df <- map_dfr(variables, process_variable) |>
+  mutate(label = case_when(val == 0 ~ "No",
+                           val ==1 ~ "Yes",
+                           TRUE ~ NA_character_
+                           )) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+
+y_limit <- max(aware_df$valid.prc) + 0.3 * max(aware_df$valid.prc)
+
+# Plot using facet_wrap with shared axes
+aware_df |>
+  filter(label == "Yes") |>
+  ggplot(aes(x = reorder(variable_title,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), vjust = -0.5) +
+  ylim(0, y_limit) 
+
+
+test_data <- aware_df |>
+  select(label, variable_title, frq) |>
+  pivot_wider(names_from = variable_title, values_from = frq) |>
+  column_to_rownames(var = "label")
+  
+yes_label <- as.numeric(test_data["Yes", ])
+column_sums <- colSums(test_data, na.rm = TRUE)
+
+# prop.test(yes_label, colSums(test_data))
+
+
+```
+
+
+
+### Overall reach
 
 ```{r}
 #| echo: false
@@ -1975,7 +2115,7 @@ create_awareness_table(awareness_table |> slice(23:43))
 :::
 
 
-# Engagement
+# Shujaaz Media usage
 
 ## Overall engagement 
 
