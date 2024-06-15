@@ -85,7 +85,10 @@ theme_set(
           panel.grid.minor = element_blank(),
           axis.title.x = element_blank(),
           axis.title.y = element_blank(),
-          axis.text.x = element_text(size = 12)
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 12),
+          legend.text = element_text(size = 12),
+          legend.title = element_blank()
           ) 
 )
 ```
@@ -1809,26 +1812,28 @@ aware_df %>%
 ```
 
 
-## Awareness of entrepreneurial programs
+## Awareness of various programs
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-Awareness of Shujaaz's entrepreneurial programs is low and varies significantly from program to program.
+Awareness of Shujaaz's programs is low and varies significantly from program to program.
 :::
 
 ```{r}
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-height: 5
-#| fig-width: 5
+#| fig-height: 4
+#| fig-width: 6
 
 # List of variables to process
-variables <- c("T_Q3_3_1", "T_Q3_3_2", "T_Q3_3_3")
+variables <- c("T_Q3_3_1", "T_Q3_3_2", "T_Q3_3_3", "Q3_4", "Q3_4a")
 
 # Mapping variable names to readable titles
 variable_titles <- c("T_Q3_3_1" = "Shujaaz Biz",
                     "T_Q3_3_2" = "Jenga Hustle",
-                    "T_Q3_3_3" = "Hustle Fiti")
+                    "T_Q3_3_3" = "Hustle Fiti",
+                    "Q3_4" = "STRA", 
+                    "Q3_4a" = "Mic Yetu")
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
@@ -1850,14 +1855,17 @@ aware_df <- map_dfr(variables, process_variable) |>
                            )) |>
   mutate(label_text = paste0(round(valid.prc, 0), "% \n(", comma(frq), ")"))
 
+# Wrap text
+aware_df$variable_title <- str_wrap(aware_df$variable_title, width = 3)
 
 # Create the stacked bar chart
 aware_df %>%
+mutate(variable_title = reorder(variable_title, valid.prc * (label == "Yes"))) %>%
   ggplot(aes(x = variable_title, y = valid.prc, fill = label)) +
   geom_bar(stat = "identity", width = 0.7) +
-  geom_text(aes(label = label_text), position = position_stack(vjust = 0.5)) +
+  geom_text(data = subset(aware_df, label == "Yes"), aes(label = label_text), position = position_stack(vjust = 1.5)) +
   scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "grey")) +
-  labs(y = "Percentage", fill = "Response")
+  labs(y = "Percentage", fill = "Response") 
 
 
 ```
