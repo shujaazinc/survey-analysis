@@ -330,6 +330,13 @@ clean_data <- engagement_clean |>
                                  ),
                                  labels = c("No", "Yes")),
                                  "Awareness"),
+         
+           prompted_booklet = set_label(case_when(
+                                 Q3_2_O1 == 0 & Q3_2a == 0 ~ 0,
+                                 Q3_2_O1 == 1 | Q3_2a == 1 ~ 1,
+                                 TRUE ~ NA_integer_
+                                 ),
+                                 "Shujaaz Booklet Awareness"),
            
            
            engagement = set_label(factor(case_when(!is.na(aware) & is.na(engage) ~ 0,
@@ -1745,6 +1752,104 @@ column_sums <- colSums(test_data, na.rm = TRUE)
 
 
 ```
+
+
+## Awareness of Shujaaz Cartoon booklet
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Approximately **68%** of young people are aware of Shujaaz cartoon booklet.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+# List of variables to process
+variables <- c("Q3_2_O1", "prompted_booklet")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q3_2_O1" = "Unprompted",
+                     "prompted_booklet" = "Prompted")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+aware_df <- map_dfr(variables, process_variable) |>
+  mutate(label = case_when(val == 0 ~ "No",
+                           val ==1 ~ "Yes",
+                           TRUE ~ NA_character_
+                           )) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+
+```
+
+::: {.flex-container}
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 5
+#| fig-height: 3
+
+aware_df %>%
+filter(variable_title == "Unprompted") %>%
+  ggplot(aes(x = 2, y = valid.prc, fill = label)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  xlim(0.5, 2.5) +  # Adjust xlim to create the donut hole
+  geom_text(aes(label = label_text), position = position_stack(vjust = 0.5)) +
+  theme_void() +  # Remove background and axes
+  theme(legend.position = "none") +
+  facet_wrap(~ variable_title) +  # Facet by variable_title
+  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "grey"))
+```
+
+</div>
+
+<div class="flex-item-50">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 5
+#| fig-height: 3
+
+aware_df %>%
+filter(variable_title == "Prompted") %>%
+  ggplot(aes(x = 2, y = valid.prc, fill = label)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  xlim(0.5, 2.5) +  # Adjust xlim to create the donut hole
+  geom_text(aes(label = label_text), position = position_stack(vjust = 0.5)) +
+  theme_void() +  # Remove background and axes
+  theme(legend.position = "none") +
+  facet_wrap(~ variable_title) +  # Facet by variable_title
+  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "grey"))
+```
+
+</div>
+
+:::
+
+
 
 
 
