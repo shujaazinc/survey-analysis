@@ -29,6 +29,7 @@ format:
 #| message: false
 #| results: hide
 #| echo: false
+#| warning: false
 
 
 library(tidyverse)
@@ -83,7 +84,9 @@ theme_set(
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           axis.title.x = element_blank(),
-          axis.title.y = element_blank())
+          axis.title.y = element_blank(),
+          axis.text.x = element_text(size = 12)
+          ) 
 )
 ```
 
@@ -1696,7 +1699,7 @@ Character awareness varies significantly.
 #| message: false
 #| warning: false
 #| fig-height: 4
-#| fig-width: 6
+#| fig-width: 4
 
 # List of variables to process
 variables <- c("T_Q3_1_1", "T_Q3_1_2", "T_Q3_1_3", "T_Q3_1_4")
@@ -1725,7 +1728,7 @@ aware_df <- map_dfr(variables, process_variable) |>
                            val ==1 ~ "Yes",
                            TRUE ~ NA_character_
                            )) |>
-  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+  mutate(label_text = paste0(round(valid.prc, 0), "% \n(", comma(frq), ")"))
 
 
 y_limit <- max(aware_df$valid.prc) + 0.3 * max(aware_df$valid.prc)
@@ -1764,7 +1767,7 @@ Approximately **68%** of young people are aware of Shujaaz cartoon booklet.
 #| message: false
 #| warning: false
 #| fig-height: 4
-#| fig-width: 6
+#| fig-width: 4
 
 # List of variables to process
 variables <- c("Q3_2_O1", "prompted_booklet")
@@ -1791,65 +1794,73 @@ aware_df <- map_dfr(variables, process_variable) |>
                            val ==1 ~ "Yes",
                            TRUE ~ NA_character_
                            )) |>
-  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+  mutate(label_text = paste0(round(valid.prc, 0), "% \n(", comma(frq), ")"))
 
 
-```
-
-::: {.flex-container}
-
-<div class="flex-item-50">
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-width: 5
-#| fig-height: 3
-
+# Create the stacked bar chart
 aware_df %>%
-filter(variable_title == "Unprompted") %>%
-  ggplot(aes(x = 2, y = valid.prc, fill = label)) +
-  geom_bar(stat = "identity", width = 1) +
-  coord_polar(theta = "y") +
-  xlim(0.5, 2.5) +  # Adjust xlim to create the donut hole
+  ggplot(aes(x = variable_title, y = valid.prc, fill = label)) +
+  geom_bar(stat = "identity", width = 0.7) +
   geom_text(aes(label = label_text), position = position_stack(vjust = 0.5)) +
-  theme_void() +  # Remove background and axes
-  theme(legend.position = "none") +
-  facet_wrap(~ variable_title) +  # Facet by variable_title
-  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "grey"))
+  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "grey")) +
+  labs(y = "Percentage", fill = "Response")
+
+
 ```
 
-</div>
 
-<div class="flex-item-50">
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| fig-width: 5
-#| fig-height: 3
-
-aware_df %>%
-filter(variable_title == "Prompted") %>%
-  ggplot(aes(x = 2, y = valid.prc, fill = label)) +
-  geom_bar(stat = "identity", width = 1) +
-  coord_polar(theta = "y") +
-  xlim(0.5, 2.5) +  # Adjust xlim to create the donut hole
-  geom_text(aes(label = label_text), position = position_stack(vjust = 0.5)) +
-  theme_void() +  # Remove background and axes
-  theme(legend.position = "none") +
-  facet_wrap(~ variable_title) +  # Facet by variable_title
-  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "grey"))
-```
-
-</div>
-
+## Awareness of entrepreneurial programs
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Awareness of Shujaaz's entrepreneurial programs is low and varies significantly from program to program.
 :::
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 5
+
+# List of variables to process
+variables <- c("T_Q3_3_1", "T_Q3_3_2", "T_Q3_3_3")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_3_1" = "Shujaaz Biz",
+                    "T_Q3_3_2" = "Jenga Hustle",
+                    "T_Q3_3_3" = "Hustle Fiti")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+  frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
 
 
+# Combine data for all variables
+aware_df <- map_dfr(variables, process_variable) |>
+  mutate(label = case_when(val == 0 ~ "No",
+                           val ==1 ~ "Yes",
+                           TRUE ~ NA_character_
+                           )) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% \n(", comma(frq), ")"))
+
+
+# Create the stacked bar chart
+aware_df %>%
+  ggplot(aes(x = variable_title, y = valid.prc, fill = label)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_text(aes(label = label_text), position = position_stack(vjust = 0.5)) +
+  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "grey")) +
+  labs(y = "Percentage", fill = "Response")
+
+
+```
 
 
 ## Overall reach
