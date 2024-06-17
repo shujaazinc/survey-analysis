@@ -688,32 +688,40 @@ Overall, majority of the respondents experienced a negative change in the past 1
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-width: 6
+#| fig-width: 4
 #| fig-height: 4
 
 # Step 3: Tokenization
+# Tokenize the 'challenge' column while filtering out any rows containing '999'
 tokens <- survey_data %>%
-select(challenge) %>%
-filter(!grepl("999", challenge))%>%
+  select(challenge) %>%
+  filter(!grepl("999", challenge)) %>%
   unnest_tokens(word, challenge)
 
 # Step 4: Remove stop words
+# Remove common stop words from the tokenized words
 data(stop_words)
 tokens <- tokens %>%
-  anti_join(stop_words)
+  anti_join(stop_words, by = "word")
 
 # Step 5: Word frequency
+# Calculate the frequency of each word and capitalize the first letter of each word
 word_freq <- tokens %>%
-  count(word, sort = TRUE) |>
-mutate(word = str_to_sentence(word))
+  count(word, sort = TRUE) %>%
+  mutate(word = str_to_sentence(word))
 
 # Step 6: Plot the most common words
+# Plot the top 10 most common words
 word_freq %>%
-  top_n(10) %>%
+  top_n(10, wt = n) %>%
   ggplot(aes(x = reorder(word, n), y = n)) +
   geom_col(fill = "#FA0005") +
   coord_flip() +
-  labs(title = "Most Common Words (top 10)", x = "Words", y = "Frequency")
+  labs(
+    title = "Most Common Words (Top 10)",
+    x = "Words",
+    y = "Frequency"
+  ) 
 
 
 ```
@@ -727,21 +735,25 @@ word_freq %>%
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-width: 6
+#| fig-width: 4
 #| fig-height: 4
 
-# Step 7: Sentiment Analysis
 sentiment <- tokens %>%
-  inner_join(get_sentiments("bing")) %>%
-  count(sentiment) |>
-mutate(sentiment = str_to_sentence(sentiment)) %>%
-rename(Sentiment = sentiment)
+  inner_join(get_sentiments("bing"), by = "word") %>% # Retain only the words that have a corresponding sentiment
+  count(sentiment) %>%
+  mutate(sentiment = str_to_sentence(sentiment)) %>%
+  rename(Sentiment = sentiment)
 
-# Plot sentiment analysis
+
 sentiment %>%
   ggplot(aes(x = Sentiment, y = n, fill = Sentiment)) +
   geom_col() +
-  labs(title = "Sentiment Analysis", x = "Sentiment", y = "Count") 
+  labs(
+    title = "Sentiment Analysis",
+    x = "Sentiment",
+    y = "Count"
+  ) +
+  scale_fill_manual(values = c("Positive" = "#FA0005", "Negative" = "gray"))
 
 ```
 
