@@ -2269,6 +2269,536 @@ create_awareness_table(awareness_table |> slice(23:43))
 
 # Shujaaz Media usage
 
+## First time use of Shujaaz's media
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Except for the comic book, most young people haven't used Shujaaz's online content.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# List of variables to process
+variables <- c("T_Q3_5_1_copy", "T_Q3_5_16_copy", "T_Q3_5_13_copy", "T_Q3_5_14_copy","T_Q3_5_15_copy","T_Q3_5_8_copy","T_Q3_5_2_copy","T_Q3_5_3_copy","T_Q3_5_9_copy","T_Q3_5_10_copy",
+"T_Q3_5_17_copy","T_Q3_5_4_copy", "T_Q3_5_5_copy", "T_Q3_5_6_copy", "T_Q3_5_7_copy")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_5_1_copy" = "Reading Comic",
+"T_Q3_5_16_copy" = "Shujaaz Biz Facebook",
+"T_Q3_5_13_copy" = "Maria Kim's Facebook and/or Instagram", 
+"T_Q3_5_14_copy" = "Malkia’s Facebook and/or Instagram",
+"T_Q3_5_15_copy" = "Charlie Pele’s Facebook and/or Instagram",
+"T_Q3_5_8_copy" = "Watched STRA",
+"T_Q3_5_2_copy" = "Shujaaz Facebook",
+"T_Q3_5_3_copy" = "Shujaaz Instagram",
+"T_Q3_5_9_copy" = "Shujaaz YouTube",
+"T_Q3_5_10_copy" = "Shujaaz TikTok",
+"T_Q3_5_17_copy" = "SMS to DJ B, Maria Kim, Malkia, or Charlie Pele",
+"T_Q3_5_4_copy" = "DJB Facebook",
+"T_Q3_5_5_copy" = "DJB Twitter",
+"T_Q3_5_6_copy" = "DJB Instagram",
+"T_Q3_5_7_copy" = "DJB WhatsApp"
+                     )
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(!is.na(label))
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  mutate(valid.prc = valid.prc / 100) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 10
+
+viz_likert_number %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "row"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 10
+
+viz_likert_percent %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "row"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+
+
+## Frequency of Media Usage
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Compared to other media. the comic has a significantly higher number of daily users.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# List of variables to process
+variables <- c("T_Q3_6_1", "T_Q3_6_16", "T_Q3_6_13", "T_Q3_6_14","T_Q3_6_15","T_Q3_6_8","T_Q3_6_2","T_Q3_6_3","T_Q3_6_9","T_Q3_6_10",
+"T_Q3_6_17","T_Q3_6_4", "T_Q3_6_5", "T_Q3_6_6", "T_Q3_6_7")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_6_1" = "Reading Comic",
+"T_Q3_6_16" = "Shujaaz Biz Facebook",
+"T_Q3_6_13" = "Maria Kim's Facebook and/or Instagram", 
+"T_Q3_6_14" = "Malkia’s Facebook and/or Instagram",
+"T_Q3_6_15" = "Charlie Pele’s Facebook and/or Instagram",
+"T_Q3_6_8" = "Watched STRA",
+"T_Q3_6_2" = "Shujaaz Facebook",
+"T_Q3_6_3" = "Shujaaz Instagram",
+"T_Q3_6_9" = "Shujaaz YouTube",
+"T_Q3_6_10" = "Shujaaz TikTok",
+"T_Q3_6_17" = "SMS to DJ B, Maria Kim, Malkia, or Charlie Pele",
+"T_Q3_6_4" = "DJB Facebook",
+"T_Q3_6_5" = "DJB Twitter",
+"T_Q3_6_6" = "DJB Instagram",
+"T_Q3_6_7" = "DJB WhatsApp"
+                     )
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(!is.na(label))
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  mutate(valid.prc = valid.prc / 100) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 10
+
+viz_likert_number %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "row"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 10
+
+viz_likert_percent %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "row"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+
+
+## Future usage
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+In the future, the youth will frequently read Shujaaz's comic book. Some youth will also engage through Facebook, Instagram, TikTok, Twitter and YouTube.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# List of variables to process
+variables <- c("T_Q3_7_1", "T_Q3_7_16", "T_Q3_7_13", "T_Q3_7_14","T_Q3_7_15","T_Q3_7_8","T_Q3_7_2","T_Q3_7_3","T_Q3_7_9","T_Q3_7_10",
+"T_Q3_7_17","T_Q3_7_4", "T_Q3_7_5", "T_Q3_7_6", "T_Q3_7_7")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_7_1" = "Reading Comic",
+"T_Q3_7_16" = "Shujaaz Biz Facebook",
+"T_Q3_7_13" = "Maria Kim's Facebook and/or Instagram", 
+"T_Q3_7_14" = "Malkia’s Facebook and/or Instagram",
+"T_Q3_7_15" = "Charlie Pele’s Facebook and/or Instagram",
+"T_Q3_7_8" = "Watched STRA",
+"T_Q3_7_2" = "Shujaaz Facebook",
+"T_Q3_7_3" = "Shujaaz Instagram",
+"T_Q3_7_9" = "Shujaaz YouTube",
+"T_Q3_7_10" = "Shujaaz TikTok",
+"T_Q3_7_17" = "SMS to DJ B, Maria Kim, Malkia, or Charlie Pele",
+"T_Q3_7_4" = "DJB Facebook",
+"T_Q3_7_5" = "DJB Twitter",
+"T_Q3_7_6" = "DJB Instagram",
+"T_Q3_7_7" = "DJB WhatsApp"
+                     )
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(!is.na(label))
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  mutate(valid.prc = valid.prc / 100) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 10
+
+viz_likert_number %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "row"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 10
+
+viz_likert_percent %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "row"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+
+
+
+
 ## Overall engagement 
 
 ```{r}
