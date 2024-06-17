@@ -3460,6 +3460,184 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 
+## Difficult Situation Solutions
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+When in a difficult situation or dealing with a controversial issue in the past, a significant number of youth have turned to a specific story, character or comic from Shujaaz.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 5
+
+
+# List of variables to process
+variables <- c("Q3_15a", "Q3_15b", "Q3_15c", "Q3_15d", "Q3_15g", "Q3_15h","Q3_15i","Q3_15j","Q3_15k","Q3_15l","Q3_15m","Q3_15n","Q3_15o","Q3_15q")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q3_15a" = "A specific story from Shujaaz",
+"Q3_15b" = "A specific character from Shujaaz",
+"Q3_15c" = "A specific person featured in Shujaaz", 
+"Q3_15d" = "Shujaaz comic",
+"Q3_15g" = "DJ B on social media",
+"Q3_15h" = "Maria Kim on social media",
+"Q3_15i" = "Malkia on social media",
+"Q3_15j" = "Charlie Pele on social media",
+"Q3_15k" = "Shujaaz Biz, Jenga Hustle or Hustle Fiti",
+"Q3_15l" = "Shujaaz social media channel",
+"Q3_15m" = "Shujaaz festival or an event",
+"Q3_15n" = "Shujaaz LIVE /Mic Yetu on Facebook",
+"Q3_15o" = "SMS/text messages to Shujaaz characters",
+"Q3_15q" = "Other"
+                     )
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(!is.na(label)) |>
+mutate(label = case_when(label == "Yes(Please specify)" ~ "Yes",
+TRUE ~ label))
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  mutate(valid.prc = valid.prc / 100) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 5
+
+viz_likert_number %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(60), data_row.padding = px(1))
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 6
+
+viz_likert_percent %>%
+select(-c("Data")) %>%
+rename("Media Type" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Media Type"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(60), data_row.padding = px(1))
+
+```
+
+
+
 # Agency Models
 
 ## Sense of self-belief
