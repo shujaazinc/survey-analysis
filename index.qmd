@@ -2308,7 +2308,7 @@ variable_titles <- c("T_Q3_5_1_copy" = "Reading Comic",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+  frq_result <- survey_data |> filter(engagement == "Yes") |> 
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
     N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -2484,7 +2484,7 @@ variable_titles <- c("T_Q3_6_1" = "Reading Comic",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+  frq_result <- survey_data |> filter(engagement == "Yes") |> 
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
     N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -2660,7 +2660,7 @@ variable_titles <- c("T_Q3_7_1" = "Reading Comic",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+  frq_result <- survey_data |> filter(engagement == "Yes") |> 
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
     N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -2818,8 +2818,9 @@ variable_titles <- c("Q3_10" = "Most frequent source of cartoon booklet")
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
-  frq_df <- as.data.frame(frq_result[[1]])
+    frq_result <- survey_data |> filter(engagement == "Yes") |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
   N <- frq_result[[1]]$n.valid[1] # Extract N
   frq_df %>%
     filter(!is.na(val)) %>%
@@ -3391,7 +3392,72 @@ ggplot(tabulation, aes(x = 2, y = valid.prc, fill = label)) +
 ```
 
 
+## Importance of Shujaaz
 
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The majority of respondents (68%) consider the resource important (21%) or somewhat important (42%).
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q3_14")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q3_14" = "Importance of Shujaaz as information source")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+    frq_result <- survey_data |> filter(engagement == "Yes") |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(label != "DK/Refused") |>
+mutate(label = case_when(label == "Very important, It is my number one resource for all my info" ~
+"Very important, it is my number one resource for all my informational needs",
+label == "Important, I use it frequently and for information on critic" ~
+"Important, I use it frequently and for information on critical issues/topics",
+label == "Somewhat important, I use it occasionally when I need inform" ~
+"Somewhat important, I use it occasionally when I need information on a specific issue/topic only",
+label == "Somewhat unimportant, I rarely use it for information" ~
+"Somewhat unimportant, I rarely use it for information",
+label == "Not at all important, I only use it for entertainment and ne" ~
+"Not at all important, I only use it for entertainment and never for information",
+TRUE ~ NA_character_
+)
+)
+
+# Wrapping
+combined_df$label <- str_wrap(combined_df$label, width = 40)
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, 40)
+
+```
 
 
 # Agency Models
