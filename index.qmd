@@ -3220,7 +3220,130 @@ create_engagement_table(engagement_table |> slice(22:43))
 :::
 
 
+## Perception of Shujaaz characters
 
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Overall, Shujaaz is perceived positively in terms of humor, inspiration, relatability, and trust. However, there is a significant perception that it caters more to a younger audience and some difficulty with understanding the language used by the characters.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_11_1", "T_Q3_11_2", "T_Q3_11_3", "T_Q3_11_4", "T_Q3_11_5", "T_Q3_11_6", "T_Q3_11_7", "T_Q3_11_8", "T_Q3_11_9", "T_Q3_11_10", "T_Q3_11_11", "T_Q3_11_12")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_11_1" = "People and characters in Shujaaz are funny",
+                     "T_Q3_11_2" = "People and characters in Shujaaz are inspiring",
+                     "T_Q3_11_3" = "People/characters in Shujaaz resemble people I know – my friends, classmates, etc",
+                     "T_Q3_11_4" = "Shujaaz is entertainments for small kids, not adults like me and my friends",
+                     "T_Q3_11_5" = "I respect Shujaaz people/characters and trust them",
+                     "T_Q3_11_6" = "I can freely talk to Shujaaz people/characters and share my thoughts, ideas, concerns and fears",
+                     "T_Q3_11_7" = "I like Shujaaz, it’s fun",
+                     "T_Q3_11_8" = "Shujaaz speaks the same language as an ordinary young Kenyan",
+                     "T_Q3_11_9" = "I have difficulty understanding Sheng in Shujaaz, nobody in my areas speaks like Shujaaz characters",
+                     "T_Q3_11_10" = "Information from Shujaaz does not need double-checking, if it’s in Shujaaz it is true",
+                     "T_Q3_11_11" = "When other people question my decisions, I tell them I learned it from Shujaaz",
+                     "T_Q3_11_12" = "Shujaaz shows life situations that are familiar to me")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `DK/Refused`,
+Agree = `Somewhat Agree`,
+Disagree = `Somewhat disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(Indicator = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("Indicator")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("Indicator")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  )%>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "red",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
 
 # Agency Models
 
