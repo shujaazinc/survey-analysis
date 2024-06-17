@@ -3345,6 +3345,55 @@ fmt(
 tab_options(table.width = pct(100), data_row.padding = px(2))
 ```
 
+
+## Shujaaz Recommendation
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+For engaged users, **52% (3,645,870)** have ever recommended Shujaaz to other people.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 4
+#| fig-height: 4
+
+
+tabulation <- survey_data |>
+filter(engagement == "Yes") |>
+frq(Q3_12, weights = base_weight)
+    
+tabulation <- as.data.frame(tabulation[[1]]) |>
+filter(!is.na(val))
+
+tabulation_yes <- tabulation %>%
+  filter(label == "Yes") %>%
+  pull(frq)
+
+tabulation_prop <- tabulation %>%
+  filter(label == "Yes") %>%
+  pull(valid.prc)
+
+
+ggplot(tabulation, aes(x = 2, y = valid.prc, fill = label)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  theme_void() +
+  theme(legend.position = "none") +
+  xlim(0.5, 2.5) +
+  geom_text(aes(label = ifelse(label == "Yes", 
+  paste0(label_percent()(tabulation_prop/100)), "")), 
+            position = position_stack(vjust = 0.5), color = "black", size = 10)+
+  scale_fill_manual(values = c("Yes" = "#FA0005", "No" = "darkgray"),
+                    name = "Legend") 
+```
+
+
+
+
+
 # Agency Models
 
 ## Sense of self-belief
