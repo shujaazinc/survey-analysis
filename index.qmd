@@ -3637,6 +3637,309 @@ tab_options(table.width = pct(60), data_row.padding = px(1))
 ```
 
 
+## Shujaaz Perception
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Overall, Shujaaz is perceived positively in terms of ideas, information and role models. However, a significant proportion is yet to apply what they learn from Shujaaz in their own life.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_16_1", "T_Q3_16_2", "T_Q3_16_3", "T_Q3_16_4", "T_Q3_16_5", "T_Q3_16_6", "T_Q3_16_7", "T_Q3_16_8", "T_Q3_16_9", "T_Q3_16_10")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_16_1" = "Shujaaz is a source of positive ideas, thoughts and information",
+                     "T_Q3_16_2" = "Shujaaz changes the way I think about future",
+                     "T_Q3_16_3" = "Shujaaz makes me feel hopeless, I will never be like people in Shujaaz, the hero",
+                     "T_Q3_16_4" = "Shujaaz gives me new ideas",
+                     "T_Q3_16_5" = "Shujaaz offers positive examples and role models",
+                     "T_Q3_16_6" = "Shujaaz examples are unrealistic and detached from what’s happening on the ground",
+                     "T_Q3_16_7" = "Some Shujaaz ideas can be applied to my life",
+                     "T_Q3_16_8" = "I intend to use the ideas I have learned from Shujaaz in my own life",
+                     "T_Q3_16_9" = "I read Shujaaz for entertainment only, it does not offer me any practical ideas",
+                     "T_Q3_16_10" = "I have actually used/applied something you learned from Shujaaz in your own life")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `DK/Refused`,
+Agree = `Somewhat Agree`,
+Disagree = `Somewhat disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(Indicator = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("Indicator")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("Indicator")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  )%>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "red",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
+
+
+
+## Shujaaz and Social Identity
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Overall, Shujaaz is perceived positively in terms of ideas, information and role models. However, a significant proportion is yet to apply what they learn from Shujaaz in their own life.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_18_1", "T_Q3_18_2", "T_Q3_18_3", "T_Q3_18_4", "T_Q3_18_5", "T_Q3_18_6", "T_Q3_18_7", "T_Q3_18_8", "T_Q3_18_9")
+
+# Mapping variable names to readable titles
+variable_titles <- c("T_Q3_18_1" = "I identify with other members of the (Shujaaz) community",
+                     "T_Q3_18_2" = "I am similar to other members of the (Shujaaz) community",
+                     "T_Q3_18_3" = "The Shujaaz community is an important reflection of who I am",
+                     "T_Q3_18_4" = "I would enjoy continuing to be a part of the Shujaaz community",
+                     "T_Q3_18_5" = "I dislike being a member of the Shujaaz community",
+                     "T_Q3_18_6" = "I think the Shujaaz community has little to be proud of",
+                     "T_Q3_18_7" = "I feel good about the Shujaaz community",
+                     "T_Q3_18_8" = "I have little respect for the Shujaaz community",
+                     "T_Q3_18_9" = "I would rather not tell people I am a member of the Shujaaz community")
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))
+
+# summary data
+viz_likert <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  ) |>
+rename(Neutral = `DK/Refused`,
+Agree = `Somewhat Agree`,
+Disagree = `Somewhat disagree`,
+Item = variable_title) |>
+select(Item, `Strongly disagree`, Disagree, Neutral, Agree, `Strongly agree`)
+
+# Plot the chart
+plot(likert(summary = viz_likert), 
+plot.percent.neutral=FALSE, 
+legend.position="top",
+low.color = "#5AB4AC", 
+high.color = "#FA0005", 
+Neutral.color.ramp = "white", 
+Neutral.color = "grey90")
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+viz_likert %>%
+rename(Indicator = Item) |>
+  gt() %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("Indicator")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("Indicator")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  )%>%
+data_color(
+columns = -c("Indicator"),
+method = "numeric",
+palette = "red",
+apply_to = c("text"),
+direction = c("row")
+)%>%
+fmt(
+    columns = -c("Indicator"),
+    fns = function(x) paste0(round(x,0), "%")
+  ) %>%
+tab_options(table.width = pct(100), data_row.padding = px(2))
+```
+
+
+## Missing Shujaaz scale
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Most respondents (28%) would miss Shujaaz a lot if it were to disappear, with 9% missing it very little, and the rest falling in between.
+:::
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q3_17")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q3_17" = "Average Score in Missing Shujaaz"
+)
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+filter(label != "DK/Refused")
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+  ylim(0, 50)
+
+```
+
+
+
 
 # Agency Models
 
