@@ -2326,7 +2326,7 @@ engagement_summary_persona <- survey_design %>%
 #| message: false
 #| warning: false
 #| fig-width: 4
-#| fig-height: 2
+#| fig-height: 4
 
 ggplot(engagement_summary, aes(x = 2, y = proportion, fill = engagement)) +
   geom_bar(stat = "identity", width = 1) +
@@ -2336,7 +2336,7 @@ ggplot(engagement_summary, aes(x = 2, y = proportion, fill = engagement)) +
   xlim(0.5, 2.5) +
   geom_text(aes(label = ifelse(engagement == "Ever engaged", 
   paste0(label_percent()(overall_engaged_prop)), "")), 
-            position = position_stack(vjust = 0.5), color = "black")+
+            position = position_stack(vjust = 0.5), color = "black", size = 10)+
   scale_fill_manual(values = c("Ever engaged" = "#FA0005", "Never engaged" = "darkgray"),
                     name = "Legend") +
 labs(
@@ -2353,7 +2353,7 @@ labs(
 #| message: false
 #| warning: false
 #| fig-width: 4
-#| fig-height: 2
+#| fig-height: 4
 
 ggplot(engagement_summary, aes(x = 2, y = total, fill = engagement)) +
   geom_bar(stat = "identity", width = 1) +
@@ -2363,7 +2363,7 @@ ggplot(engagement_summary, aes(x = 2, y = total, fill = engagement)) +
   xlim(0.5, 2.5) +
   geom_text(aes(label = ifelse(engagement == "Ever engaged", 
   paste0(comma((overall_engaged_total))), "")), 
-            position = position_stack(vjust = 0.5), color = "black")+
+            position = position_stack(vjust = 0.5), color = "black", size = 10)+
   scale_fill_manual(values = c("Ever engaged" = "#FA0005", "Never engaged" = "darkgray"),
                     name = "Legend") +
 labs(
@@ -2476,14 +2476,17 @@ location_engagement_test <- survey_design %>%
 #| echo: false
 #| message: false
 #| warning: false
-#| fig-width: 8
+#| fig-width: 4
 #| fig-height: 4
 
-ggplot(engagement_summary_location, aes(x=engagement, y=proportion, fill=Location)) +
-  geom_bar(stat="identity", position=position_dodge()) +
+engagement_summary_location %>%
+filter(engagement == "Ever engaged") %>%
+ggplot(aes(x=Location, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
   geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
-  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=-0.5, position=position_dodge(0.9)) +
-  labs(title="Engagement by location", x="Awareness", y="Proportion")
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(title="Engagement by location", x="Location", y="Proportion")
 
 ```
 
