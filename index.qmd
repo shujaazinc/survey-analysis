@@ -294,6 +294,35 @@ engagement_clean <-engagement_clean %>%
 #| results: hide
 #| echo: false
 
+
+times_online <- c("Q2_7_O1", 
+                  "Q2_7_O2", 
+                  "Q2_7_O3", 
+                  "Q2_7_O4", 
+                  "Q2_7_O5", 
+                  "Q2_7_O6")
+
+# Define a function to calculate the sums for each specified value
+calculate_online_sum <- function(df, times_online, value) {
+  rowSums(select(df, all_of(times_online)) == value, na.rm = TRUE)
+}
+
+# Apply the function to create the new columns
+engagement_clean <- engagement_clean %>%
+  mutate(online_1 = calculate_online_sum(., times_online, 1),
+         online_2 = calculate_online_sum(., times_online, 2),
+         online_3 = calculate_online_sum(., times_online, 3),
+         online_4 = calculate_online_sum(., times_online, 4),
+         online_5 = calculate_online_sum(., times_online, 5),
+         online_6 = calculate_online_sum(., times_online, 6))
+
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
 ## select minimum data
 
 clean_data <- engagement_clean |>
@@ -793,7 +822,7 @@ variable_titles <- c("T_Q1_16_1" = "Terrorism",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+  frq_result <- survey_data |> 
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
     N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -986,7 +1015,7 @@ variable_titles <- c("T_Q2_1_1" = "Watch broadcast TV",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+  frq_result <- survey_data |> 
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
     N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -1301,7 +1330,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-The most common times youth go online is **6pm - 10pm** and **10pm - 2pm**
+Over 55% of youth go online between **6pm** and **10pm**
 :::
 
 
@@ -1312,22 +1341,28 @@ The most common times youth go online is **6pm - 10pm** and **10pm - 2pm**
 #| fig-height: 4
 #| fig-width: 10
 
+
 # List of variables to process
-variables <- c("Q2_7_O2", "Q2_7_O3")
+variables <- c("online_1", "online_2", "online_3", "online_4", "online_5", "online_6")
 
 # Mapping variable names to readable titles
-variable_titles <- c("Q2_7_O2" = "First Choice",
-                     "Q2_7_O3" = "Second Choice"
-)
+variable_titles <- c("online_1" = "2am-6am",
+                     "online_2" = "6am-10am",
+                     "online_3" = "10am-2pm",
+                     "online_4" = "2pm-6pm",
+                     "online_5" = "6pm-10pm",
+                     "online_6" = "10pm-2am"
+                     )
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- frq(survey_data[[variable]], weights = survey_data$base_weight)
-  frq_df <- as.data.frame(frq_result[[1]])
-  N <- frq_result[[1]]$n.valid[1] # Extract N
-  frq_df %>%
-    filter(!is.na(val)) %>%
-    mutate(variable = variable, N = N) # Add columns for the variable name and N
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+    N <- frq_result[[1]]$n.valid[1] # Extract N
+    frq_df %>%
+      filter(!is.na(val)) %>%
+      mutate(variable = variable, N = N, variable_title = variable_titles[variable]) # Add columns for the variable name, N, and variable title
 }
 
 
@@ -1336,19 +1371,143 @@ combined_df <- map_dfr(variables, process_variable)
 
 # Create a column for the combined percentage and N label
 combined_df <- combined_df %>%
+mutate(label = case_when(val == 0 ~ "No",
+                          val == 1 ~ "Yes",
+                          TRUE ~ NA_character_)) %>%
   mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
-filter(label != "DK/Refused")
+filter(!is.na(label))
+# 
+# y_limit <- max(combined_df$valid.prc) + 0.4 * max(combined_df$valid.prc)
+# # Plot using facet_wrap with shared axes
+# ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+#   geom_bar(stat = "identity", fill = "#FA0005") +
+#   geom_text(aes(label = label_text), hjust = -0.05) +
+#   coord_flip() +
+#   facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
+#   ylim(0, 50)
+```
 
-y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
-# Plot using facet_wrap with shared axes
-ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
-  geom_bar(stat = "identity", fill = "#FA0005") +
-  geom_text(aes(label = label_text), hjust = -0.05) +
-  coord_flip() +
-  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles))+
-  ylim(0, 50)
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_percent <- combined_df %>%
+  select(variable_title, label, valid.prc) %>%
+  mutate(valid.prc = valid.prc / 100) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = valid.prc
+  )  |>
+mutate(Data = "Percent")
+
+viz_likert_number <- combined_df %>%
+  select(variable_title, label, frq) %>%
+  pivot_wider(
+    names_from = label,
+    values_from = frq
+  )  |>
+mutate(Data = "Number")
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_number %>%
+select(-c("Data")) %>%
+rename("Time" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Absolute Number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = c("Yes"),
+method = "numeric",
+palette = "ggsci::red_material"
+)%>%
+tab_options(table.width = pct(60), data_row.padding = px(1))
 
 ```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+viz_likert_percent %>%
+select(-c("Data")) %>%
+rename("Time" = variable_title) %>%
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = c("Yes"),
+method = "numeric",
+palette = "ggsci::red_material"
+)%>%
+tab_options(table.width = pct(60), data_row.padding = px(1))
+
+```
+
+
 
 
 ## Favourite Activities
@@ -1434,7 +1593,7 @@ variable_titles <- c("T_Q2_12_1" = "Facebook",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> filter(persona == "Boni") |>
+  frq_result <- survey_data |> 
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
     N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -1663,7 +1822,7 @@ variable_titles <- c("T_Q2_15_1" = "People/characters are inspiring",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> 
+  frq_result <- survey_data |>  
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
     N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -1734,7 +1893,7 @@ variable_titles <- c("T_Q3_1_1" = "DJ Boyie",
 
 # Function to process each variable and return a data frame
 process_variable <- function(variable) {
-  frq_result <- survey_data |> filter(engagement == "Yes") |> 
+  frq_result <- survey_data |>  
     frq(variable, weights = base_weight)
   frq_df <- as.data.frame(frq_result[[1]])
   N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -2449,7 +2608,7 @@ tab_options(table.width = pct(100), data_row.padding = px(1))
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-Compared to other media. the comic has a significantly higher number of daily users.
+Compared to other media, the comic has a significantly higher number of daily users.
 :::
 
 ```{r}
@@ -3939,6 +4098,70 @@ ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
 ```
 
 
+# Income and money
+
+## Main activity
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Majority (62%) of young people (fans and no fans) are full-time students. 
+:::
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q4_1")
+
+# Mapping variable names to readable titles
+variable_titles <- c("Q4_1" = "Main activity in the past 12 months"
+)
+
+# Function to process each variable and return a data frame
+process_variable <- function(variable) {
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+
+# Combine data for all variables
+combined_df <- map_dfr(variables, process_variable)
+
+# Create a column for the combined percentage and N label
+combined_df <- combined_df %>%
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(
+label = case_when(val == 2 ~ "Self-employed, working for yourself, have my own small business",
+val == 3 ~ "Working for a company/organization full-time or part-time for a regular salary",
+val == 4 ~ "Doing occasional paid assignments for companies or people, irregular pay, or regular pay",
+val == 8 ~ "Other",
+TRUE  ~ label)
+  ) |>
+filter(label != "DK/Refused")
+
+# Wrap labels
+combined_df$label <- str_wrap(combined_df$label, width = 45)
+
+y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
+# Plot using facet_wrap with shared axes
+ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles)) +
+  ylim(0, 100)
+
+```
 
 
 # Agency Models
