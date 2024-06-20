@@ -4536,31 +4536,6 @@ tab_options(table.width = pct(80), data_row.padding = px(2))
 
 
 
-
-
-```{r}
-engagement_clean <- engagement_clean %>%
-  mutate(source_1 = calculate_source_sum(., money_sources, 1),
-         source_2 = calculate_source_sum(., money_sources, 2),
-         source_3 = calculate_source_sum(., money_sources, 3),
-         source_4 = calculate_source_sum(., money_sources, 4),
-         source_5 = calculate_source_sum(., money_sources, 5),
-         source_6 = calculate_source_sum(., money_sources, 6),
-         source_7 = calculate_source_sum(., money_sources, 7),
-         source_8 = calculate_source_sum(., money_sources, 8),
-         source_9 = calculate_source_sum(., money_sources, 9),
-         source_10 = calculate_source_sum(., money_sources, 10),
-         source_11 = calculate_source_sum(., money_sources, 11),
-         source_12 = calculate_source_sum(., money_sources, 12),
-         source_13 = calculate_source_sum(., money_sources, 13),
-         source_14 = calculate_source_sum(., money_sources, 14),
-         source_15 = calculate_source_sum(., money_sources, 15),
-         source_16 = calculate_source_sum(., money_sources, 16),
-         source_17 = calculate_source_sum(., money_sources, 17),
-         source_18 = calculate_source_sum(., money_sources, 18)
-         )
-```
-
 # Agency Models
 
 ## Sense of self-belief
