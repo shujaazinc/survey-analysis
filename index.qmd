@@ -317,6 +317,46 @@ engagement_clean <- engagement_clean %>%
          online_5 = calculate_online_sum(., times_online, 5),
          online_6 = calculate_online_sum(., times_online, 6))
 
+
+## Sources of money
+money_sources <- c("Q4_2_O1", 
+                  "Q4_2_O2", 
+                  "Q4_2_O3", 
+                  "Q4_2_O4", 
+                  "Q4_2_O5", 
+                  "Q4_2_O6",
+                  "Q4_2_O7", 
+                  "Q4_2_O8", 
+                  "Q4_2_O9", 
+                  "Q4_2_O10")
+
+# Define a function to calculate the sums for each specified value
+calculate_source_sum <- function(df, money_sources, value) {
+  rowSums(select(df, all_of(money_sources)) == value, na.rm = TRUE)
+}
+
+# Apply the function to create the new columns
+engagement_clean <- engagement_clean %>%
+  mutate(source_1 = calculate_source_sum(., money_sources, 1),
+         source_2 = calculate_source_sum(., money_sources, 2),
+         source_3 = calculate_source_sum(., money_sources, 3),
+         source_4 = calculate_source_sum(., money_sources, 4),
+         source_5 = calculate_source_sum(., money_sources, 5),
+         source_6 = calculate_source_sum(., money_sources, 6),
+         source_7 = calculate_source_sum(., money_sources, 7),
+         source_8 = calculate_source_sum(., money_sources, 8),
+         source_9 = calculate_source_sum(., money_sources, 9),
+         source_10 = calculate_source_sum(., money_sources, 10),
+         source_11 = calculate_source_sum(., money_sources, 11),
+         source_12 = calculate_source_sum(., money_sources, 12),
+         source_13 = calculate_source_sum(., money_sources, 13),
+         source_14 = calculate_source_sum(., money_sources, 14),
+         source_15 = calculate_source_sum(., money_sources, 15),
+         source_16 = calculate_source_sum(., money_sources, 16),
+         source_17 = calculate_source_sum(., money_sources, 17),
+         source_18 = calculate_source_sum(., money_sources, 18)
+         )
+
 ```
 
 ```{r}
@@ -4299,6 +4339,227 @@ tab_options(table.width = pct(80), data_row.padding = px(2))
 ```
 
 
+## Sources of money
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Majority (62%) of young people get their money from relatives, savings and government welfare. 
+:::
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("source_1", "source_2", "source_3", "source_4", "source_5", "source_6", "source_7", "source_8", "source_9", "source_10", "source_11", "source_12", "source_13", "source_14", "source_15", "source_16", "source_17", "source_18")
+
+
+
+# Mapping variable names to readable titles
+variable_titles <- c(
+  "source_1" = "Student scholarship",
+  "source_2" = "Government welfare, subsidy, or other benefits",
+  "source_3" = "Non-government/private organization welfare, subsidy, or other benefits",
+  "source_4" = "Transfers/upkeep money or in-kind support from a family member or a relative",
+  "source_5" = "Savings, money you or a family member accumulated for your expenses",
+  "source_6" = "Interest on stock and shares",
+  "source_7" = "Occasionally sell my belongings",
+  "source_8" = "Occasionally grow and/or sell produce, livestock, fish, etc.",
+  "source_9" = "A loan from friends, relatives, neighbors, or other people",
+  "source_10" = "A loan from an informal group (e.g., chama)",
+  "source_11" = "A loan from a formal financial organization (e.g., a bank, MFI, SACCO)",
+  "source_12" = "A digital loan from Tala, Branch, Fuliza, M-Shwari and similar",
+  "source_13" = "Pretended that myself or somebody in my family was sick to raise money from other people",
+  "source_14" = "Cheated someone out of a little money once or twice",
+  "source_15" = "Stole a bit of money here and there",
+  "source_16" = "I have a sponsa, who pays my bills and/or gives me money",
+  "source_17" = "Other",
+  "source_18" = "DK/Refused"
+)
+
+
+# Function to process each variable and return a data frame
+process_variable_all <- function(variable) {
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_fan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nonfan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+# Combine data for all variables
+df_all <- map_dfr(variables, process_variable_all) |> mutate(pop = "All")
+df_fan <- map_dfr(variables, process_variable_fan) |> mutate(pop = "Fans")
+df_nonfan <- map_dfr(variables, process_variable_nonfan) |> mutate(pop = "Non-fans")
+
+df_combo <- bind_rows(df_all, df_fan, df_nonfan) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(valid.prc = valid.prc/100) |>
+filter(variable_title != "DK/Refused")
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo %>%
+filter(val == 1) |>
+select(variable_title, valid.prc, pop) |>
+pivot_wider(names_from = pop, values_from = valid.prc) |>
+rename("Source" = variable_title) |>
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Source")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Source"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+```
+
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo |>
+filter(val == 1) |>
+select(variable_title, frq, pop) |>
+pivot_wider(names_from = pop, values_from = frq) |>
+rename("Source" = variable_title) |>
+gt() %>%
+tab_header(
+    title = "Estimated number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Source")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Source"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+```
+
+
+
+
+
+```{r}
+engagement_clean <- engagement_clean %>%
+  mutate(source_1 = calculate_source_sum(., money_sources, 1),
+         source_2 = calculate_source_sum(., money_sources, 2),
+         source_3 = calculate_source_sum(., money_sources, 3),
+         source_4 = calculate_source_sum(., money_sources, 4),
+         source_5 = calculate_source_sum(., money_sources, 5),
+         source_6 = calculate_source_sum(., money_sources, 6),
+         source_7 = calculate_source_sum(., money_sources, 7),
+         source_8 = calculate_source_sum(., money_sources, 8),
+         source_9 = calculate_source_sum(., money_sources, 9),
+         source_10 = calculate_source_sum(., money_sources, 10),
+         source_11 = calculate_source_sum(., money_sources, 11),
+         source_12 = calculate_source_sum(., money_sources, 12),
+         source_13 = calculate_source_sum(., money_sources, 13),
+         source_14 = calculate_source_sum(., money_sources, 14),
+         source_15 = calculate_source_sum(., money_sources, 15),
+         source_16 = calculate_source_sum(., money_sources, 16),
+         source_17 = calculate_source_sum(., money_sources, 17),
+         source_18 = calculate_source_sum(., money_sources, 18)
+         )
+```
 
 # Agency Models
 
