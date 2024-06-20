@@ -43,6 +43,7 @@ library(janitor)
 library(data.table)
 library(sjlabelled)
 library(sjmisc)
+library(freqtables)
 library(ggtext)
 library(scales)
 library(prismatic)
@@ -889,7 +890,7 @@ rename(Issue = variable_title) %>%
 select(-c("Data", "DK/Refused")) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -1081,7 +1082,7 @@ select(-c("Data")) %>%
 rename("Media Type" = variable_title) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -1425,7 +1426,7 @@ select(-c("Data")) %>%
 rename("Time" = variable_title) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -1660,7 +1661,7 @@ select(-c("Data")) %>%
 rename("Platform" = variable_title) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -2518,7 +2519,7 @@ select(-c("Data")) %>%
 rename("Media Type" = variable_title) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -2694,7 +2695,7 @@ select(-c("Data")) %>%
 rename("Media Type" = variable_title) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -2870,7 +2871,7 @@ select(-c("Data")) %>%
 rename("Media Type" = variable_title) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -3709,7 +3710,7 @@ select(-c("Data")) %>%
 rename("Media Type" = variable_title) %>%
 gt() %>%
 tab_header(
-    title = "Absolute Number"
+    title = "Estimated number"
   )%>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
@@ -4115,6 +4116,25 @@ Majority (62%) of young people (fans and no fans) are full-time students.
 #| fig-height: 4
 #| fig-width: 10
 
+pop_all <- survey_data |> freq_table(Q4_1) |> mutate(pop = "All")
+pop_user <- survey_data |> filter(engagement == "Yes") |> freq_table(Q4_1) |> mutate(pop = "Fan")
+pop_nonuser <- survey_data |> filter(engagement == "No") |> freq_table(Q4_1) |> mutate(pop = "Non fan")
+
+combo <- bind_rows(pop_all, pop_user, pop_nonuser) |>
+select(cat, pop, percent, lcl, ucl)
+
+```
+
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
 # List of variables to process
 variables <- c("Q4_1")
 
@@ -4123,8 +4143,30 @@ variable_titles <- c("Q4_1" = "Main activity in the past 12 months"
 )
 
 # Function to process each variable and return a data frame
-process_variable <- function(variable) {
+process_variable_all <- function(variable) {
   frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+process_variable_fan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N) # Add columns for the variable name and N
+}
+
+process_variable_nonfan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
     frq(variable, weights = base_weight)
     frq_df <- as.data.frame(frq_result[[1]])
   N <- frq_result[[1]]$n.valid[1] # Extract N
@@ -4135,33 +4177,127 @@ process_variable <- function(variable) {
 
 
 # Combine data for all variables
-combined_df <- map_dfr(variables, process_variable)
+df_all <- map_dfr(variables, process_variable_all) |> mutate(pop = "All")
+df_fan <- map_dfr(variables, process_variable_fan) |> mutate(pop = "Fans")
+df_nonfan <- map_dfr(variables, process_variable_nonfan) |> mutate(pop = "Non-fans")
 
-# Create a column for the combined percentage and N label
-combined_df <- combined_df %>%
+df_combo <- bind_rows(df_all, df_fan, df_nonfan) |>
   mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
-  mutate(
-label = case_when(val == 2 ~ "Self-employed, working for yourself, have my own small business",
-val == 3 ~ "Working for a company/organization full-time or part-time for a regular salary",
-val == 4 ~ "Doing occasional paid assignments for companies or people, irregular pay, or regular pay",
-val == 8 ~ "Other",
-TRUE  ~ label)
+  mutate(valid.prc = valid.prc/100,
+      label = case_when(val == 2 ~ "Self-employed, working for yourself, have my own small business",
+      val == 3 ~ "Working for a company/organization full-time or part-time for a regular salary",
+      val == 4 ~ "Doing occasional paid assignments for companies or people, irregular pay, or regular pay",
+      val == 8 ~ "Other",
+      TRUE  ~ label)
   ) |>
 filter(label != "DK/Refused")
 
-# Wrap labels
-combined_df$label <- str_wrap(combined_df$label, width = 45)
+```
 
-y_limit <- max(combined_df$valid.prc) + 0.3 * max(combined_df$valid.prc)
-# Plot using facet_wrap with shared axes
-ggplot(combined_df, aes(x = reorder(label,valid.prc), y = valid.prc)) +
-  geom_bar(stat = "identity", fill = "#FA0005") +
-  geom_text(aes(label = label_text), hjust = -0.05) +
-  coord_flip() +
-  facet_wrap(~ variable, scales = "fixed", labeller = labeller(variable = variable_titles)) +
-  ylim(0, 100)
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo %>%
+select(label, valid.prc, pop) |>
+pivot_wider(names_from = pop, values_from = valid.prc) |>
+rename("Main activity" = label) |>
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Main activity")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Main activity"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
 
 ```
+
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo %>%
+select(label, frq, pop) |>
+pivot_wider(names_from = pop, values_from = frq) |>
+rename("Main activity" = label) |>
+gt() %>%
+tab_header(
+    title = "Estimated number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Main activity")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Main activity"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+```
+
 
 
 # Agency Models
