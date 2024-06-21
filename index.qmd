@@ -26,3 +26,4 @@ format:
 
 {{< include chapter1.qmd >}}
 {{< include income_and_money.qmd >}}
+{{< include agency_models.qmd >}}
