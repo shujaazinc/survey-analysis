@@ -1001,6 +1001,11 @@ filter(variable_title != "DK/Refused")
 
 ### Overall
 
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Majority of young people get their money from relatives, savings and government welfare. Higher among Shujaaz fans.
+:::
+
 ```{r}
 #| echo: false
 #| message: false
@@ -1452,6 +1457,11 @@ filter(label != "DK/Refused")
 
 
 ### Overall
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Most young people do not have any hustles but would like to try some hustle ideas.
+:::
 
 ```{r}
 #| echo: false
