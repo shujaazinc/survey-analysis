@@ -1,0 +1,1057 @@
+---
+format:
+  html:
+    page-layout: full
+    toc: true
+    toc-title: "Table of Contents"
+    toc-depth: 5
+    toc-expand: 1
+    toc-location: left
+    number-sections: true
+    css: custom.css
+    include-in-header: 
+      text: |
+        <div id="title">
+          <div style="float: left; width: 20%;">
+            <img src="images/logo.png" alt="Logo" style="width: 150px; margin-left: 20px;"/>
+          </div>
+          <div style="float: left; width: 60%; text-align: center;">
+            <h1> Insights From The Annual Survey </h1>
+          </div>
+          <div style="float: right; width: 20%; text-align: right;">
+            <p style="margin-right: 20px; margin-top: 20px; font-size: 1.2em;">Shujaaz K&L</p>
+          </div>
+        </div>
+---
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+#| warning: false
+
+
+library(tidyverse)
+library(readxl)
+library(scales)
+library(DT)
+library(gt)
+library(haven)
+library(rio)
+library(janitor)
+library(data.table)
+library(sjlabelled)
+library(sjmisc)
+library(freqtables)
+library(ggtext)
+library(scales)
+library(prismatic)
+library(gtsummary)
+library(survey)
+library(srvyr)
+library(psych)
+library(extrafont)
+library(likert)
+library(broom)
+library(prettyunits)
+library(tidytext)
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+#| warning: false
+
+#font_import()
+#loadfonts(device = "win")
+
+# # Define the custom theme with adjusted font sizes
+# custom_theme <- theme_minimal(base_size = 15) +  # Adjust base size as needed
+#   theme(
+#     plot.title = element_text(size = 12, face = "bold"),  # Adjust title size
+#     legend.title = element_text(size = 10),              # Adjust legend title size
+#     legend.text = element_text(size = 12),               # Adjust legend text size
+#     axis.text = element_text(size = 12),                 # Adjust axis text size
+#     axis.title = element_text(size = 12)                 # Adjust axis title size
+#   )
+
+# Set the custom theme globally
+# Set the global theme
+theme_set(
+  theme_minimal(base_family = "Roboto Condensed") +
+    theme(plot.title = element_text(hjust = 0.5, size = 12),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 12),
+          legend.text = element_text(size = 12),
+          legend.title = element_blank()
+          ) 
+)
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+raw_23 <- read_sav("data/2023_shujaaz annual survey anonymized.sav")
+pop_kenya <- import("data/us_census_pop_kenya.xlsx", 
+                    sheet = "2015 - 2030", 
+                    skip = 3)
+
+county_mapping <- import("data/county_cleaning.xlsx", 
+                    sheet = "Mapping") |> select(-check)
+raw_23 <- raw_23 |>
+  left_join(county_mapping,
+            by = c("Q1_2" = "value"))
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+binarize_awareness <- function(data, columns) {
+  # Ensure columns is a character vector
+  columns <- as.character(columns)
+  
+  # Loop through each specified column
+  for (col in columns) {
+    # Check if the column exists in the data frame
+    if (col %in% colnames(data)) {
+      # Replace 2 with 0 in the specified column
+      data[[col]][data[[col]] %in% c(2,3)] <- 0
+      # Assign factor labels
+      data[[col]] <- as.numeric(data[[col]])
+    } else {
+      warning(paste("Column", col, "not found in the data frame"))
+    }
+  }
+  
+  return(data)
+}
+
+# Awareness data cleaning
+awareness_vars <- c("T_Q3_1_1", 
+                    "T_Q3_1_2", 
+                    "T_Q3_1_3", 
+                    "T_Q3_1_4",
+                    "Q3_2_O1",
+                    "Q3_2_O2",
+                    "Q3_2_O3",
+                    "Q3_2a",
+                    "T_Q3_3_1",
+                    "T_Q3_3_2",
+                    "T_Q3_3_3",
+                    "Q3_4",
+                    "Q3_4a")
+
+raw_23 <- raw_23 %>%
+  mutate(across(all_of(awareness_vars), ~., .names = "{col}_copy"))
+
+awareness_clean <- binarize_awareness(raw_23, awareness_vars) %>%
+  mutate(aware = do.call(pmax, c(select(., all_of(awareness_vars)), 
+                                         na.rm = TRUE))
+  )
+  
+  
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+binarize_engagement <- function(data, columns) {
+  # Ensure columns is a character vector
+  columns <- as.character(columns)
+  
+  # Loop through each specified column
+  for (col in columns) {
+    # Check if the column exists in the data frame
+    if (col %in% colnames(data)) {
+      # Replace with 1 in the specified column
+      data[[col]][data[[col]] %in% c(1,6)] <- 0
+      # Replace with 0 in the specified column
+      data[[col]][data[[col]] %in% c(2,3,4,5)] <- 1
+      # Assign factor labels
+      data[[col]] <- as.numeric(data[[col]])
+    } else {
+      warning(paste("Column", col, "not found in the data frame"))
+    }
+  }
+  
+  return(data)
+}
+
+# Awareness data cleaning
+engagement_vars <- c("T_Q3_5_1", 
+                    "T_Q3_5_2", 
+                    "T_Q3_5_3", 
+                    "T_Q3_5_4",
+                    "T_Q3_5_5",
+                    "T_Q3_5_6",
+                    "T_Q3_5_7",
+                    "T_Q3_5_8",
+                    "T_Q3_5_9",
+                    "T_Q3_5_10",
+                    "T_Q3_5_11",
+                    "T_Q3_5_12",
+                    "T_Q3_5_13",
+                    "T_Q3_5_14",
+                    "T_Q3_5_15",
+                    "T_Q3_5_16",
+                    "T_Q3_5_17",
+                    "T_Q3_5_18"
+                    )
+
+less_comic <- setdiff(engagement_vars, "T_Q3_5_1")
+
+meta_combo_vars <-  c("T_Q3_5_13","T_Q3_5_14", "T_Q3_5_15")
+facebook_vars <- c("T_Q3_5_2", "T_Q3_5_4", "T_Q3_5_12", "T_Q3_5_16")
+instagram_vars <- c("T_Q3_5_3", "T_Q3_5_6")
+youtube_vars <-  c("T_Q3_5_8", "T_Q3_5_9")
+tiktok_vars <- c("T_Q3_5_10")
+twitter_vars <- c("T_Q3_5_5")
+whatsapp_vars <- c("T_Q3_5_7")
+sms_vars <- c("T_Q3_5_17")
+
+
+awareness_clean <- awareness_clean %>%
+  mutate(across(all_of(engagement_vars), ~., .names = "{col}_copy"))
+
+
+engagement_clean <- binarize_engagement(awareness_clean, engagement_vars) %>%
+  mutate(engage = do.call(pmax, c(select(., all_of(engagement_vars)), 
+                                         na.rm = TRUE)),
+         engagement_noncomic = do.call(pmax, c(select(., all_of(less_comic)), 
+                                         na.rm = TRUE)),
+         comic_only = case_when(T_Q3_5_1 == 0 ~ 0,
+                                engagement_noncomic == 0 & T_Q3_5_1 == 1 ~ 1,
+                                 TRUE ~ NA_integer_
+                                ),
+         meta_combo_use = do.call(pmax, c(select(., all_of(meta_combo_vars)), 
+                                         na.rm = TRUE)),
+         facebook_use = do.call(pmax, c(select(., all_of(facebook_vars)), 
+                                         na.rm = TRUE)),
+         instagram_use = do.call(pmax, c(select(., all_of(instagram_vars)), 
+                                         na.rm = TRUE)),
+         youtubr_use = do.call(pmax, c(select(., all_of(youtube_vars)), 
+                                         na.rm = TRUE)),
+         tiktok_use = do.call(pmax, c(select(., all_of(tiktok_vars)), 
+                                         na.rm = TRUE)),
+         whataspp_use = do.call(pmax, c(select(., all_of(whatsapp_vars)), 
+                                         na.rm = TRUE)),
+         sms_use = do.call(pmax, c(select(., all_of(sms_vars)), 
+                                         na.rm = TRUE))
+         
+  ) %>%
+  mutate(channels_use = rowSums(select(., meta_combo_use:sms_use), 
+                                na.rm = TRUE),
+         channels_binary = case_when(channels_use == 0 ~ 0,
+                                     channels_use > 1 ~ 1,
+                                     TRUE ~ NA_integer_
+                                     )
+  )
+  
+  
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+
+modern_contraception_vars <- c("FP11_6", 
+                               "FP11_7", 
+                               "FP11_8", 
+                               "FP11_9", 
+                               "FP11_10", 
+                               "FP11_11", 
+                               "FP11_12", 
+                               "T_FP11_14", 
+                               "FP11_15", 
+                               "FP11_16")
+
+engagement_clean <-engagement_clean %>%
+  mutate(modern_fp = do.call(pmin, c(select(., all_of(modern_contraception_vars)), 
+                                         na.rm = TRUE))
+         )
+
+```
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+
+times_online <- c("Q2_7_O1", 
+                  "Q2_7_O2", 
+                  "Q2_7_O3", 
+                  "Q2_7_O4", 
+                  "Q2_7_O5", 
+                  "Q2_7_O6")
+
+# Define a function to calculate the sums for each specified value
+calculate_online_sum <- function(df, times_online, value) {
+  rowSums(select(df, all_of(times_online)) == value, na.rm = TRUE)
+}
+
+# Apply the function to create the new columns
+engagement_clean <- engagement_clean %>%
+  mutate(online_1 = calculate_online_sum(., times_online, 1),
+         online_2 = calculate_online_sum(., times_online, 2),
+         online_3 = calculate_online_sum(., times_online, 3),
+         online_4 = calculate_online_sum(., times_online, 4),
+         online_5 = calculate_online_sum(., times_online, 5),
+         online_6 = calculate_online_sum(., times_online, 6))
+
+
+## Family Planning methods
+fp_methods <- c("FP3_O1", 
+                  "FP3_O2", 
+                  "FP3_O3", 
+                  "FP3_O4", 
+                  "FP3_O5", 
+                  "FP3_O6",
+                  "FP3_O7", 
+                  "FP3_O8", 
+                  "FP3_O9", 
+                  "FP3_O10",
+                  "FP3_O11",
+                  "FP3_O12",
+                  "FP3_O13",
+                  "FP3_O14",
+                  "FP3_O15")
+
+# Define a function to calculate the sums for each specified value
+calculate_fp_method_sum <- function(df, fp_methods, value) {
+  rowSums(select(df, all_of(fp_methods)) == value, na.rm = TRUE)
+}
+
+# Apply the function to create the new columns
+engagement_clean <- engagement_clean %>%
+  mutate(fp_method_1 = calculate_fp_method_sum(., fp_methods, 1),
+         fp_method_2 = calculate_fp_method_sum(., fp_methods, 2),
+         fp_method_3 = calculate_fp_method_sum(., fp_methods, 3),
+         fp_method_4 = calculate_fp_method_sum(., fp_methods, 4),
+         fp_method_5 = calculate_fp_method_sum(., fp_methods, 5),
+         fp_method_6 = calculate_fp_method_sum(., fp_methods, 6),
+         fp_method_7 = calculate_fp_method_sum(., fp_methods, 7),
+         fp_method_8 = calculate_fp_method_sum(., fp_methods, 8),
+         fp_method_9 = calculate_fp_method_sum(., fp_methods, 9),
+         fp_method_10 = calculate_fp_method_sum(., fp_methods, 10),
+         fp_method_11 = calculate_fp_method_sum(., fp_methods, 11),
+         fp_method_12 = calculate_fp_method_sum(., fp_methods, 12),
+         #fp_method_13 = calculate_fp_method_sum(., fp_methods, 13),
+         fp_method_14 = calculate_fp_method_sum(., fp_methods, 14),
+         fp_method_15 = calculate_fp_method_sum(., fp_methods, 15),
+         fp_method_16 = calculate_fp_method_sum(., fp_methods, 16),
+         fp_method_17 = calculate_fp_method_sum(., fp_methods, 17),
+         fp_method_18 = calculate_fp_method_sum(., fp_methods, 18)
+         )
+
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+## select minimum data
+
+clean_data <- engagement_clean |>
+  mutate(id = SbjNum, #Respondent ID
+           code = Code,
+           county_name = county_label, # County Name
+           location = set_label(factor(case_when(Q1_6 == 1 ~ "Urban",
+                                        Q1_6 == 2 ~ "Rural",
+                                        TRUE ~ NA_character_)),
+                                "Location"),
+            # Age
+           age_group = set_label(factor(
+             case_when(Actual_Age >= 15 & Actual_Age <= 19 ~ "15-19",
+                       Actual_Age >= 20 & Actual_Age <= 24 ~ "20-24",
+                       TRUE ~ NA_character_)),
+                             "Age"),
+           # Gender
+           gender = set_label(factor(
+             case_when(Q1_8 == 1 ~ "Male",
+                       Q1_8 == 2 ~ "Female",
+                       TRUE ~ NA_character_)),
+             "Gender"),
+           
+           persona = set_label(
+             factor(case_when(
+               gender == "Female" & age_group == "15-19" ~ "Nana",
+               gender == "Female" & age_group == "20-24" ~ "Nina",
+               gender == "Male" & age_group == "15-19" ~ "Boni",
+               gender == "Male" & age_group == "20-24" ~ "Barasa",
+               TRUE ~ NA_character_)),
+               "Persona"),
+           
+           education = set_label(relevel(as.factor(
+             case_when(Q1_9 %in% c(1,2,3) ~ "Incomplete primary",
+                       Q1_9 %in% c(4) ~ "Complete primary",
+                       Q1_9 %in% c(5) ~ "Complete secondary",
+                       Q1_9 %in% c(6,7) ~ "Secondary and above",
+                       TRUE ~ NA_character_)),
+             "Incomplete primary"),
+             "Education Level"),
+           
+           
+           awareness = set_label(factor(case_when(aware == 1 ~ 1,
+                                 aware == 0 & engage == 1 ~ 1,
+                                 TRUE ~ aware
+                                 ),
+                                 labels = c("No", "Yes")),
+                                 "Awareness"),
+         
+           prompted_booklet = set_label(case_when(
+                                 Q3_2_O1 == 0 & Q3_2a == 0 ~ 0,
+                                 Q3_2_O1 == 1 | Q3_2a == 1 ~ 1,
+                                 TRUE ~ NA_integer_
+                                 ),
+                                 "Shujaaz Booklet Awareness"),
+           
+           
+           engagement = set_label(factor(case_when(!is.na(aware) & is.na(engage) ~ 0,
+                                  TRUE ~ engage
+                                  ),
+                                 labels = c("No", "Yes")),
+                                 "Awareness"),
+           
+           
+           modern_fp_1 = set_label(factor(case_when(modern_fp %in% c(2,3,4,5) ~ "No",
+                                                    modern_fp == 1 ~ "Yes",
+                                                    TRUE ~ NA_character_),
+                                                  labels = c("No", "Yes")),
+                                          "Use of modern contraceptives"),
+         optimism = set_label(factor(case_when(
+                                            AM3 == 1 ~ 0,
+                                            AM3 %in% c(2, 3) ~ 1,
+                                            TRUE ~ NA_integer_
+                                          ), labels = c("No", "Yes")),
+                                          "Optimism"),
+         money_mngt = set_label(factor(case_when(
+                                            T_F1_1 == 2 ~ 0,
+                                            T_F1_1 == 1 ~ 1,
+                                            TRUE ~ NA_integer_
+                                          ), labels = c("No", "Yes")),
+                                          "I know how to manage the little money I have to take care of my needs"),
+         challenge = gsub("[[:punct:]]", "", tolower(Q1_15))
+  ) |>
+  filter(!is.na(age_group))
+  
+
+```
+
+
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+county_pop <- pop_kenya |>
+  filter(ADM_LEVEL == 1) |>  # Ensure ADM_LEVEL column exists and is filtered for level 1
+  transmute(
+    country = "Kenya",
+    county = ADM1_NAME,  # Ensure ADM1_NAME column exists
+    code = as.numeric(NSO_CODE),  # Ensure NSO_CODE can be converted to numeric
+    
+    # Female Pop
+    F1519_2023 = F1519_2023,  # Ensure these columns exist
+    F1519_2024 = F1519_2024,
+    F1519_2025 = F1519_2025,
+    
+    F2024_2023 = F2024_2023,
+    F2024_2024 = F2024_2024,
+    F2024_2025 = F2024_2025,
+    
+    # Male Pop
+    M1519_2023 = M1519_2023,
+    M1519_2024 = M1519_2024,
+    M1519_2025 = M1519_2025,
+    
+    M2024_2023 = M2024_2023,
+    M2024_2024 = M2024_2024,
+    M2024_2025 = M2024_2025
+  ) |>
+  mutate(
+    # Explicitly refer to the current data frame within rowSums
+    POP23 = rowSums(across(c(F1519_2023, F2024_2023, M1519_2023, M2024_2023)), na.rm = TRUE),
+    POP24 = rowSums(across(c(F1519_2024, F2024_2024, M1519_2024, M2024_2024)), na.rm = TRUE),
+    POP25 = rowSums(across(c(F1519_2025, F2024_2025, M1519_2025, M2024_2025)), na.rm = TRUE)
+  )
+
+counties <- county_pop |>
+  select(county, code)
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+population_data <- county_pop |>
+    pivot_longer(
+    cols = starts_with("F") | starts_with("M"),  
+    names_to = "indicator",              
+    values_to = "population") |>
+    mutate(gender = substr(indicator, 1, 1),
+           age_group = as.integer(substr(indicator, 2, 5)),
+           year = as.integer(substr(indicator, 7, 10))) |>
+  transmute(
+    country = country,
+    code = code,
+    county = county,
+    gender = ifelse(gender == "F", "Female", "Male"),
+    age_group = paste(substr(age_group, 1, 2), substr(age_group, 3,4), sep = "-"),
+    year = year,
+    population = population
+  ) |>
+  pivot_wider(names_from = year,
+              values_from = population,
+              names_prefix = "pop")
+
+write_csv(population_data,
+          "data/pop_projections.csv")
+```
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+
+# Step 1: Population totals for each group (typically from census data)
+survey_population_totals <- population_data |>
+  select(code, county, age_group, gender, pop2023) |>
+  rename(population = pop2023)
+
+# Step 2: Calculate counts from survey data
+survey_counts <- clean_data %>%
+  group_by(age_group, gender, code, county_name) %>%
+  summarise(count = n(), .groups = 'drop')  # .groups = 'drop' to ungroup directly
+
+# Step 3: Merge survey counts with population totals
+survey_counts <- survey_counts %>%
+  left_join(survey_population_totals, by = c("age_group", "gender", "code"))
+
+# Step 4: Calculate base weights
+# need to adjust the weight so it sums to the population instead of the sample
+survey_counts <- survey_counts |>
+  mutate(base_weight = population / count)  # Correct the formula
+
+# Step 5: Merge scaled weights back with survey data
+survey_data <- clean_data %>%
+  left_join(survey_counts |> select(age_group, gender, code, population, base_weight), 
+            by = c("age_group", "gender", "code"))
+
+# Step 6: Create a new strata variable that combines code, age_group, and gender
+survey_data <- survey_data %>%
+  mutate(strata_var = paste(code, age_group, gender, sep = "_"))
+
+# Step 7: Handle missing values in weights if any
+survey_data <- survey_data %>%
+  mutate(base_weight = ifelse(is.na(base_weight), 0, base_weight))
+
+# Step 8: Verify the weights
+sum(survey_data$base_weight)
+
+```
+
+```{r}
+#| echo: false
+
+survey_design <- survey_data |>
+  as_survey_design(weights = base_weight,
+                   strata = code,
+                   ids = id,
+                   nest = TRUE)
+```
+
+
+# Sexual and Reproductive Health
+
+## Family planning methods
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("fp_method_1", "fp_method_2", "fp_method_3", "fp_method_4", "fp_method_5", "fp_method_6", "fp_method_7", "fp_method_8", "fp_method_9", "fp_method_10", "fp_method_11", "fp_method_12", "fp_method_14", "fp_method_15", "fp_method_16", "fp_method_17", "fp_method_18")
+
+
+
+# Mapping variable names to readable titles
+variable_titles <- c(
+  "fp_method_1" = "Flushing/abortion",
+  "fp_method_2" = "Abstinence",
+  "fp_method_3" = "Withdrawal",
+  "fp_method_4" = "Traditional methods (e.g., herbs)",
+  "fp_method_5" = "Safe days or rhythm method",
+  "fp_method_6" = "Implant",
+  "fp_method_7" = "CD, male condom",
+  "fp_method_8" = "Patch",
+  "fp_method_9" = "Injectable",
+  "fp_method_10" = "Coil",
+  "fp_method_11" = "Daily pill",
+  "fp_method_12" = "Emergency pill, e-pill, or P2",
+  "fp_method_14" = "Female condom",
+  "fp_method_15" = "Female sterilization",
+  "fp_method_16" = "Male sterilization",
+  "fp_method_17" = "Other",
+  "fp_method_18" = "None of the above"
+)
+
+
+# Function to process each variable and return a data frame
+process_variable_all <- function(variable) {
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_fan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nonfan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+# Combine data for all variables
+df_all <- map_dfr(variables, process_variable_all) |> mutate(pop = "All")
+df_fan <- map_dfr(variables, process_variable_fan) |> mutate(pop = "Fans")
+df_nonfan <- map_dfr(variables, process_variable_nonfan) |> mutate(pop = "Non-fans")
+
+df_combo <- bind_rows(df_all, df_fan, df_nonfan) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(valid.prc = valid.prc/100) |>
+  filter(!variable_title %in% c("None of the above", "Other"))
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# Users
+# Function to process each variable and return a data frame
+process_variable_barasa_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Barasa") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_boni_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_nana_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Nana") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nina_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Nina") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+# Non Users
+# Function to process each variable and return a data frame
+process_variable_barasa_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Barasa") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_boni_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_nana_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Nana") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nina_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Nina") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+
+# Combine data for all variables
+df_barasa_yes <- map_dfr(variables, process_variable_barasa_yes) |> mutate(pop = "Barasa", user = "Fan")
+df_boni_yes <- map_dfr(variables, process_variable_boni_yes) |> mutate(pop = "Boni", user = "Fan")
+df_nana_yes <- map_dfr(variables, process_variable_nana_yes) |> mutate(pop = "Nana", user = "Fan")
+df_nina_yes <- map_dfr(variables, process_variable_nina_yes) |> mutate(pop = "Nina", user = "Fan")
+
+
+df_barasa_no <- map_dfr(variables, process_variable_barasa_no) |> mutate(pop = "Barasa", user = "Non-fan")
+df_boni_no <- map_dfr(variables, process_variable_boni_no) |> mutate(pop = "Boni", user = "Non-fan")
+df_nana_no <- map_dfr(variables, process_variable_nana_no) |> mutate(pop = "Nana", user = "Non-fan")
+df_nina_no <- map_dfr(variables, process_variable_nina_no) |> mutate(pop = "Nina", user = "Non-fan")
+
+df_combo_persona <- bind_rows(df_barasa_yes, df_boni_yes, df_nana_yes, df_nina_yes,
+                              df_barasa_no, df_boni_no, df_nana_no, df_nina_no
+                             ) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(valid.prc = valid.prc/100) |>
+  filter(!variable_title %in% c("None of the above", "Other"))
+
+```
+
+
+
+
+### Overall
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Except for male condoms, knowledge on other modern methods of contraception is low among the youth.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo %>%
+filter(val == 1) |>
+select(variable_title, valid.prc, pop) |>
+pivot_wider(names_from = pop, values_from = valid.prc) |>
+rename("Method" = variable_title) |>
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Method")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Method"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(1))
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo |>
+filter(val == 1) |>
+select(variable_title, frq, pop) |>
+pivot_wider(names_from = pop, values_from = frq) |>
+rename("Method" = variable_title) |>
+gt() %>%
+tab_header(
+    title = "Estimated number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Method")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Method"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(1))
+
+```
+
+
+### By persona
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo_persona %>%
+  filter(val == 1) %>%
+  select(variable_title, valid.prc, user, pop) %>%
+  pivot_wider(
+    names_from = c(user, pop), 
+    values_from = valid.prc, 
+    names_glue = "{user}_{pop}",
+    values_fill = list(valid.prc = 0)
+  )%>%
+rename("Method" = variable_title) |>
+gt() %>%
+tab_spanner_delim(
+    delim = "_"
+  ) %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Method")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Method"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo_persona %>%
+  filter(val == 1) %>%
+  select(variable_title, frq, user, pop) %>%
+  pivot_wider(
+    names_from = c(user, pop), 
+    values_from = frq, 
+    names_glue = "{user}_{pop}",
+    values_fill = list(frq = 0)
+  )%>%
+rename("Method" = variable_title) |>
+gt() %>%
+tab_spanner_delim(
+    delim = "_"
+  ) %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Method")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Method"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(1))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
