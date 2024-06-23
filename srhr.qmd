@@ -282,6 +282,8 @@ modern_contraception_vars <- c("FP11_6",
                                "FP11_15", 
                                "FP11_16")
 
+protection_vars <- c("FP11_7", "T_FP11_14")
+
 engagement_clean <-engagement_clean %>%
   mutate(modern_fp = do.call(pmin, c(select(., all_of(modern_contraception_vars)), 
                                          na.rm = TRUE))
@@ -289,7 +291,15 @@ engagement_clean <-engagement_clean %>%
   mutate(modern_fp_bin = set_label(as.factor(case_when(modern_fp %in% c(2,3,4,5) ~ 0,
                                                        modern_fp == 1 ~ 1,
                                                        TRUE ~ NA_integer_)),
-                                          "Use of modern Family Planning"))
+                                          "Use of modern Family Planning")) %>%
+  mutate(protection = do.call(pmin, c(select(., all_of(protection_vars)), 
+                                         na.rm = TRUE))
+         ) %>%
+  mutate(protection_bin = set_label(as.factor(case_when(protection %in% c(2,3,4,5,6,7) ~ 0,
+                                                       protection  == 1 ~ 1,
+                                                       TRUE ~ NA_integer_)),
+                                          "Use of protection"))
+  
 
 ```
 
@@ -1487,10 +1497,890 @@ tab_options(table.width = pct(100), data_row.padding = px(2))
 
 
 
+## Ease of discussing safe sex
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("FP21")
+
+
+
+# Mapping variable names to readable titles
+variable_titles <- c("FP21" = "Pregancy & STI prevention discussion")
+
+
+# Function to process each variable and return a data frame
+process_variable_all <- function(variable) {
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_fan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nonfan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+# Combine data for all variables
+df_all <- map_dfr(variables, process_variable_all) |> mutate(pop = "All")
+df_fan <- map_dfr(variables, process_variable_fan) |> mutate(pop = "Fans")
+df_nonfan <- map_dfr(variables, process_variable_nonfan) |> mutate(pop = "Non-fans")
+
+df_combo <- bind_rows(df_all, df_fan, df_nonfan) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(valid.prc = valid.prc/100) |>
+mutate(label = str_to_sentence(label)) |>
+filter(!is.na(label))
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# Users
+# Function to process each variable and return a data frame
+process_variable_barasa_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Barasa") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_boni_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_nana_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Nana") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nina_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Nina") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+# Non Users
+# Function to process each variable and return a data frame
+process_variable_barasa_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Barasa") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_boni_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_nana_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Nana") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nina_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Nina") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+
+# Combine data for all variables
+df_barasa_yes <- map_dfr(variables, process_variable_barasa_yes) |> mutate(pop = "Barasa", user = "Fan")
+df_boni_yes <- map_dfr(variables, process_variable_boni_yes) |> mutate(pop = "Boni", user = "Fan")
+df_nana_yes <- map_dfr(variables, process_variable_nana_yes) |> mutate(pop = "Nana", user = "Fan")
+df_nina_yes <- map_dfr(variables, process_variable_nina_yes) |> mutate(pop = "Nina", user = "Fan")
+
+
+df_barasa_no <- map_dfr(variables, process_variable_barasa_no) |> mutate(pop = "Barasa", user = "Non-fan")
+df_boni_no <- map_dfr(variables, process_variable_boni_no) |> mutate(pop = "Boni", user = "Non-fan")
+df_nana_no <- map_dfr(variables, process_variable_nana_no) |> mutate(pop = "Nana", user = "Non-fan")
+df_nina_no <- map_dfr(variables, process_variable_nina_no) |> mutate(pop = "Nina", user = "Non-fan")
+
+df_combo_persona <- bind_rows(df_barasa_yes, df_boni_yes, df_nana_yes, df_nina_yes,
+                              df_barasa_no, df_boni_no, df_nana_no, df_nina_no
+                             ) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(valid.prc = valid.prc/100) |>
+mutate(label = str_to_sentence(label)) |>
+filter(!is.na(label))
+
+```
 
 
 
 
+### Overall
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Majority of the youth find it difficult to start a discussion with a boy/girl they are currently having sex with or plan to have sex with about the ways to prevent unwanted pregnancies and STIs/HIV
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+chi_ex2 <- survey_design %>%
+drop_na(FP5, FP6) %>%
+  svychisq(
+    formula = ~ FP5 + FP6,
+    design = .,
+    statistic = "Wald",
+    na.rm = TRUE
+  )
+
+df_combo %>%
+select(label, valid.prc, pop) |>
+pivot_wider(names_from = pop, values_from = valid.prc) |>
+rename("Ease of discussion " = label) |>
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Ease of discussion ")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Ease of discussion "),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo |>
+select(label, frq, pop) |>
+pivot_wider(names_from = pop, values_from = frq) |>
+rename("Ease of discussion " = label) |>
+gt() %>%
+tab_header(
+    title = "Estimated number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Ease of discussion ")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Ease of discussion "),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+```
+
+
+### By persona
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo_persona %>%
+  select(label, valid.prc, user, pop) %>%
+  pivot_wider(
+    names_from = c(user, pop), 
+    values_from = valid.prc, 
+    names_glue = "{user}_{pop}",
+    values_fill = list(valid.prc = 0)
+  )%>%
+rename("Ease of discussion " = label) |>
+gt() %>%
+tab_spanner_delim(
+    delim = "_"
+  ) %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Ease of discussion ")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Ease of discussion "),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(2))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo_persona %>%
+  select(label, frq, user, pop) %>%
+  pivot_wider(
+    names_from = c(user, pop), 
+    values_from = frq, 
+    names_glue = "{user}_{pop}",
+    values_fill = list(frq = 0)
+  )%>%
+rename("Ease of discussion " = label) |>
+gt() %>%
+tab_spanner_delim(
+    delim = "_"
+  ) %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Ease of discussion ")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Ease of discussion "),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(2))
+
+```
+
+
+
+
+## Use of protection
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("protection")
+
+
+
+# Mapping variable names to readable titles
+variable_titles <- c("protection" = "Use of protection (Condoms)")
+
+
+# Function to process each variable and return a data frame
+process_variable_all <- function(variable) {
+  frq_result <- survey_data |> 
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_fan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nonfan <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+# Combine data for all variables
+df_all <- map_dfr(variables, process_variable_all) |> mutate(pop = "All")
+df_fan <- map_dfr(variables, process_variable_fan) |> mutate(pop = "Fans")
+df_nonfan <- map_dfr(variables, process_variable_nonfan) |> mutate(pop = "Non-fans")
+
+df_combo <- bind_rows(df_all, df_fan, df_nonfan) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(valid.prc = valid.prc/100) |>
+mutate(label = str_to_sentence(label)) |>
+filter(!is.na(label))
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+# Users
+# Function to process each variable and return a data frame
+process_variable_barasa_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Barasa") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_boni_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_nana_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Nana") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nina_yes <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "Yes") |>
+  filter(persona == "Nina") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+# Non Users
+# Function to process each variable and return a data frame
+process_variable_barasa_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Barasa") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_boni_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Boni") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+process_variable_nana_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Nana") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable])
+}
+
+process_variable_nina_no <- function(variable) {
+  frq_result <- survey_data |>
+  filter(engagement == "No") |>
+  filter(persona == "Nina") |>
+    frq(variable, weights = base_weight)
+    frq_df <- as.data.frame(frq_result[[1]])
+  N <- frq_result[[1]]$n.valid[1] # Extract N
+  frq_df %>%
+    filter(!is.na(val)) %>%
+    mutate(variable = variable, N = N, variable_title = variable_titles[variable]) 
+}
+
+
+
+# Combine data for all variables
+df_barasa_yes <- map_dfr(variables, process_variable_barasa_yes) |> mutate(pop = "Barasa", user = "Fan")
+df_boni_yes <- map_dfr(variables, process_variable_boni_yes) |> mutate(pop = "Boni", user = "Fan")
+df_nana_yes <- map_dfr(variables, process_variable_nana_yes) |> mutate(pop = "Nana", user = "Fan")
+df_nina_yes <- map_dfr(variables, process_variable_nina_yes) |> mutate(pop = "Nina", user = "Fan")
+
+
+df_barasa_no <- map_dfr(variables, process_variable_barasa_no) |> mutate(pop = "Barasa", user = "Non-fan")
+df_boni_no <- map_dfr(variables, process_variable_boni_no) |> mutate(pop = "Boni", user = "Non-fan")
+df_nana_no <- map_dfr(variables, process_variable_nana_no) |> mutate(pop = "Nana", user = "Non-fan")
+df_nina_no <- map_dfr(variables, process_variable_nina_no) |> mutate(pop = "Nina", user = "Non-fan")
+
+df_combo_persona <- bind_rows(df_barasa_yes, df_boni_yes, df_nana_yes, df_nina_yes,
+                              df_barasa_no, df_boni_no, df_nana_no, df_nina_no
+                             ) |>
+  mutate(label_text = paste0(round(valid.prc, 0), "% (", comma(frq), ")"))|>
+  mutate(valid.prc = valid.prc/100) |>
+mutate(label = str_to_sentence(label)) |>
+filter(!is.na(label))
+
+```
+
+
+
+
+### Overall
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+A significant majority of youth do not always use protection whenever they have sex.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+chi_ex2 <- survey_design %>%
+drop_na(FP5, FP6) %>%
+  svychisq(
+    formula = ~ FP5 + FP6,
+    design = .,
+    statistic = "Wald",
+    na.rm = TRUE
+  )
+
+df_combo %>%
+select(label, valid.prc, pop) |>
+pivot_wider(names_from = pop, values_from = valid.prc) |>
+rename("Use of protection" = label) |>
+gt() %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Use of protection")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Use of protection"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+```
+
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo |>
+select(label, frq, pop) |>
+pivot_wider(names_from = pop, values_from = frq) |>
+rename("Use of protection" = label) |>
+gt() %>%
+tab_header(
+    title = "Estimated number"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Use of protection")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Use of protection"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(80), data_row.padding = px(2))
+
+```
+
+
+### By persona
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo_persona %>%
+  select(label, valid.prc, user, pop) %>%
+  pivot_wider(
+    names_from = c(user, pop), 
+    values_from = valid.prc, 
+    names_glue = "{user}_{pop}",
+    values_fill = list(valid.prc = 0)
+  )%>%
+rename("Use of protection" = label) |>
+gt() %>%
+tab_spanner_delim(
+    delim = "_"
+  ) %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_percent(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Use of protection")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Use of protection"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(2))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+df_combo_persona %>%
+  select(label, frq, user, pop) %>%
+  pivot_wider(
+    names_from = c(user, pop), 
+    values_from = frq, 
+    names_glue = "{user}_{pop}",
+    values_fill = list(frq = 0)
+  )%>%
+rename("Use of protection" = label) |>
+gt() %>%
+tab_spanner_delim(
+    delim = "_"
+  ) %>%
+tab_header(
+    title = "Percentage"
+  )%>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+fmt_number(
+      columns = everything(),
+      decimals = 0,
+      use_seps = TRUE
+    ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = -c("Use of protection")
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) %>%
+data_color(
+columns = -c("Use of protection"),
+method = "numeric",
+palette = "ggsci::red_material",
+direction = "column"
+)%>%
+tab_options(table.width = pct(100), data_row.padding = px(2))
+
+```
 
 
 
