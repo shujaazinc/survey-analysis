@@ -706,7 +706,7 @@ cols_label(
 valid.prc = "Percent",
 frq = "Number"
 ) %>%
-tab_options(table.width = pct(70), data_row.padding = px(2))
+tab_options(table.width = pct(70), data_row.padding = px(5))
 
 ```
 
