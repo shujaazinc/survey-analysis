@@ -28,5 +28,7 @@ format:
 {{< include income_and_money.qmd >}}
 {{< include srhr.qmd >}}
 {{< include hiv.qmd >}}
-{{< include agency_models.qmd >}}
+{{< include financial_literacy.qmd >}}
+{{< include wigs.qmd >}}
+
 
