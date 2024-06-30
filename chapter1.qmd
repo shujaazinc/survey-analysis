@@ -644,6 +644,70 @@ unweighted_summary_table <- survey_data %>%
 unweighted_summary_table
 ```
 
+## Sample Characteristics by county
+
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Counties with higher representation include Nairobi (12%), Kiambu (6.6%), and Nakuru (5.0%). Nairobi consistently had the highest number of respondents across all age and gender categories.
+:::
+
+```{r}
+#| message: false
+#| results: hide
+#| echo: false
+
+unweighted_county_table <- survey_data %>%
+  mutate(age_gender = paste(gender, age_group, sep = " , ")) %>%
+  select(county_name, age_gender) %>%
+  tbl_summary(
+    by = age_gender,
+    statistic = list(all_continuous() ~ "{median} ({sd})",
+                     all_categorical() ~ "{n} ({p}%)"),
+    digits = all_continuous() ~ 2,
+    label = county_name ~ "County"
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "**Characteristic**") %>%
+  modify_spanning_header(-c("label", "stat_0") ~ "**Gender and age**") %>%
+  as_gt() %>%
+  tab_style(
+    style = list(cell_borders(sides = "all", color = "gray", weight = px(1)),
+                 cell_text(weight = "bold", color = "black")),
+    locations = cells_body()
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "black"),
+      cell_fill(color = "#FFFDD0")
+    ),
+    locations = cells_column_labels(everything())
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", color = "black"),
+      cell_fill(color = "#FFFDD0")
+    ),
+    locations = cells_column_spanners()
+  ) %>%
+  opt_table_font(
+    font = list(
+      google_font(name = "Roboto Condensed")
+    )
+  ) |>
+  tab_options(data_row.padding = px(1))
+
+
+
+```
+
+```{r}
+#| echo: false
+
+unweighted_county_table
+
+```
+
+
 ## Relationship status
 
 ::: {.note}

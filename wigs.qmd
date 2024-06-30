@@ -2401,6 +2401,72 @@ df_combo_persona <- bind_rows(df_all_yes, df_barasa_yes, df_boni_yes, df_nana_ye
 Being fan generally correlates with higher positive sentiments and behaviors across various life aspects, suggesting that fan engagement may play a role in fostering a more optimistic and proactive attitude.
 :::
 
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+
+dumbbell <- df_combo_persona %>%
+    filter(
+    case_when(
+      variable == "AM3" ~ val == 3,
+      variable == "T_Q4_18_1" ~ val == 4,
+      TRUE ~ val == 1
+    )) %>%
+  select(variable_title, valid.prc, user, pop) %>%
+  pivot_wider(
+    names_from = c(user, pop), 
+    values_from = valid.prc, 
+    names_glue = "{user}_{pop}",
+    values_fill = list(valid.prc = 0)
+  )%>%
+rename("WIG" = variable_title) |>
+select(WIG, Fan_All, `Non-fan_All`)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 5
+#| fig-width: 10
+
+
+library(ggalt)
+
+
+# Create the dumbbell plot with legend
+dumbbell %>%
+  ggplot(aes(x = `Non-fan_All`, xend = Fan_All, y = reorder(WIG, Fan_All))) + 
+  geom_dumbbell(color = "#e3e2e1",
+                size = 3,
+                colour_x = "#66c2a5",
+                colour_xend = "#FA0005",
+                dot_guide = TRUE,
+                dot_guide_size = 0.25) +
+  labs(title = "Comparison of Fans and Non-fans",
+       subtitle = "Fan vs Non-fans",
+       x = "Proportion",
+       y = "",
+       caption = "Data Source: 2023 Annual Survey") +
+  scale_color_manual(values = c("Non-fan" = "#66c2a5", "Fan" = "#FA0005")) +
+scale_x_continuous(labels = scales::label_percent()) +
+  guides(color = guide_legend(title = "Group")) +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1),  # Style the plot caption
+    legend.position = "bottom"  # Position the legend at the bottom
+  ) +
+  geom_point(aes(x = `Non-fan_All`, y = reorder(WIG, Fan_All), color = "Non-fan"), size = 3) +
+  geom_point(aes(x = Fan_All, y = reorder(WIG, Fan_All), color = "Fan"), size = 3)
+
+```
+
+
 
 ```{r}
 #| echo: false
@@ -2418,6 +2484,8 @@ df_combo_persona %>%
       TRUE ~ val == 1
     )) %>%
   select(variable_title, valid.prc, user, pop) %>%
+filter(pop != "All") %>%
+mutate(valid.prc = valid.prc * 100) %>%
   pivot_wider(
     names_from = c(user, pop), 
     values_from = valid.prc, 
@@ -2436,7 +2504,7 @@ tab_header(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
     locations = cells_body()
   ) %>%
-fmt_percent(
+fmt_number(
       columns = everything(),
       decimals = 0,
       use_seps = TRUE
