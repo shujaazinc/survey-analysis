@@ -597,6 +597,8 @@ survey_design <- survey_data |>
                    strata = code,
                    ids = id,
                    nest = TRUE)
+
+counties <- data.frame(county_name = unique(survey_data$county_name))
 ```
 
 
@@ -651,7 +653,45 @@ df_combo <- df_fan |>
 
 ::: {.note}
 <span class="info-icon">ℹ️</span>
-Shujaaz enjoys a significant level of trust, pride, and inspiration among its audience. However, the practical application of its content in daily life is **less** widespread.
+Shujaaz enjoys a significant level of trust, pride, and inspiration among its audience. However, only **2 in ever 10** apply what they have learned from Shujaaz in their daily life.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 3
+#| fig-width: 8
+
+y_limit <- max(df_combo$valid.prc) + 0.5 * max(df_combo$valid.prc)
+
+# Plot using facet_wrap with shared axes
+df_combo |>
+filter(ifelse(variable == "T_Q3_18_6", val == 4, val == 1)) |>
+ggplot(aes(x = reorder(variable_title,valid.prc), y = valid.prc)) +
+  geom_bar(stat = "identity", fill = "#FA0005") +
+  geom_text(aes(label = label_text), hjust = -0.05) +
+  coord_flip() +
+ylim(0, y_limit) +
+theme(axis.text.x = element_blank()) +
+  labs(
+    title = "Brand Love",
+    # subtitle = "Filtered by Specific Criteria",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+  
+```
+
+### Proud to be a Shujaaz
+#### Proud to be a Shujaaz fan by location
+::: {.note}
+<span class="info-icon">ℹ️</span>
+The data provides evidence that being proud to be a Shujaaz fan significantly varies by location, p = `r pretty_p_value(0.009115)`. Specifically, urban fans are more proud to be Shujaaz fans than rural fans.
 :::
 
 ```{r}
@@ -661,26 +701,142 @@ Shujaaz enjoys a significant level of trust, pride, and inspiration among its au
 #| fig-height: 4
 #| fig-width: 10
 
+# List of variables to process
+variables <- c("T_Q3_18_6")
 
-df_combo %>%
-filter(ifelse(variable == "T_Q3_18_6", val == 4, val == 1)) %>%
-select(variable_title, valid.prc, frq) |>
-rename("WIG" = variable_title) |>
+by_location <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(location, T_Q3_18_6) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_18_6 == 4) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+by_location %>%
+  ggplot(aes(x=location, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Proud to be Shujaaz fan by location",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Location", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_18_6) %>%
+  group_by(location) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_18_6 == 4, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+location_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_18_6) %>%
+  svychisq(
+    formula = ~ location + T_Q3_18_6,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+#### Proud of being Shujaaz fan by county
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There are is high variation in the percentage proud of being Shujaaz fans.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_18_6")
+
+by_county <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(county_name, T_Q3_18_6) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_18_6 == 4) %>%
+full_join(counties) %>%
+ungroup() %>%
+dplyr::mutate(proportion = ifelse(is.na(proportion), 0, proportion)) %>%
+rename(County = county_name) |>
+ungroup() %>%
+arrange(desc(proportion))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Define a function to generate the color based on the value
+color_fill <- function(x) {
+  scales::col_numeric(
+    palette = colorRampPalette(c("white", "lightblue"))(10), 
+    domain = c(0, 1)
+  )(x)
+}
+
+# Create a gt table with dynamic color fill
+create_table <- function(data) {
+data %>%
+select(County, proportion) %>%
 gt() %>%
+data_color(
+columns = c("proportion"),
+method = "numeric",
+palette = "ggsci::red_material",
+domain = c(0,1)
+) %>%
   tab_style(
     style = cell_borders(sides = "all", color = "gray", weight = px(1)),
     locations = cells_body()
   ) %>%
-fmt_percent(
-      columns = c("valid.prc"),
-      decimals = 0,
-      use_seps = TRUE
-    ) %>%
-fmt_number(
-      columns = c("frq"),
-      decimals = 0,
-      use_seps = TRUE
-    ) %>%
+  fmt_percent(
+    columns = c("proportion"),
+    decimals = 0
+  ) %>%
   tab_style(
     style = list(
       cell_text(weight = "bold", size = px(16))
@@ -688,30 +844,1377 @@ fmt_number(
     locations = cells_column_labels()
   ) %>%
   cols_align(
+    align = "left",
+    columns = c("County")
+  ) %>%
+cols_align(
     align = "right",
-    columns = -c("WIG")
+    columns = -c("County")
+  ) %>%
+cols_label(
+    proportion = "Proud"
   ) %>%
   opt_table_font(
-    font = list(
-      google_font(name = "Roboto Condensed")
-    )
-  ) %>%
-data_color(
-columns = -c("WIG"),
-method = "numeric",
-palette = "ggsci::red_material",
-direction = "column"
-)%>%
-cols_label(
-valid.prc = "Percent",
-frq = "Number"
-) %>%
-tab_options(table.width = pct(70), data_row.padding = px(5))
+    font = "Arial"
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(1))
+}
 
 ```
 
 
-## WIGS By persona
+::: {.flex-container}
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(1:16))
+```
+
+</div>
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(17:30))
+```
+
+</div>
+
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(31:47))
+```
+
+</div>
+
+:::
+
+
+
+#### Proud to be Shujaaz fan by persona (age and sex)
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There's no evidence that being proud of being a Shujaaz fan varies significantly by persona (age and sex), p = `r pretty_p_value(0.6407)`.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_18_6")
+
+by_persona <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(persona, T_Q3_18_6) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_18_6 == 4) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+by_persona %>%
+  ggplot(aes(x=persona, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Proud to be Shujaaz fan by Persona",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Persona", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(persona, T_Q3_18_6) %>%
+  group_by(persona) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_18_6 == 4, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+persona_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_18_6) %>%
+  svychisq(
+    formula = ~ persona + T_Q3_18_6,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+### Shujaaz is inspiring
+#### Inspire by location
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Shujaaz generally inspires fans equally by location, p = `r pretty_p_value(0.9605)`. 
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_16_4")
+
+by_location <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(location, T_Q3_16_4) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_16_4 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+by_location %>%
+  ggplot(aes(x=location, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Shujaaz is inspiring by location",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Location", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_16_4) %>%
+  group_by(location) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_16_4 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+location_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_16_4) %>%
+  svychisq(
+    formula = ~ location + T_Q3_16_4,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+#### Inspire by county
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There are is high variation in inspiring level across counties.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_16_4")
+
+by_county <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(county_name, T_Q3_16_4) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_16_4 == 1) %>%
+full_join(counties) %>%
+ungroup() %>%
+dplyr::mutate(proportion = ifelse(is.na(proportion), 0, proportion)) %>%
+rename(County = county_name) |>
+ungroup() %>%
+arrange(desc(proportion))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Define a function to generate the color based on the value
+color_fill <- function(x) {
+  scales::col_numeric(
+    palette = colorRampPalette(c("white", "lightblue"))(10), 
+    domain = c(0, 1)
+  )(x)
+}
+
+# Create a gt table with dynamic color fill
+create_table <- function(data) {
+data %>%
+select(County, proportion) %>%
+gt() %>%
+data_color(
+columns = c("proportion"),
+method = "numeric",
+palette = "ggsci::red_material",
+domain = c(0,1)
+) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+  fmt_percent(
+    columns = c("proportion"),
+    decimals = 0
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("County")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("County")
+  ) %>%
+cols_label(
+    proportion = "Inspire"
+  ) %>%
+  opt_table_font(
+    font = "Arial"
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(1))
+}
+
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(1:16))
+```
+
+</div>
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(17:30))
+```
+
+</div>
+
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(31:47))
+```
+
+</div>
+
+:::
+
+
+
+#### Inspire by persona (age and sex)
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There's no evidence that Shujaaz inspires personas differently (age and sex), p = `r pretty_p_value(0.8528)`.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_16_4")
+
+by_persona <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(persona, T_Q3_16_4) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_16_4 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+by_persona %>%
+  ggplot(aes(x=persona, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Shujaaz is inspiring",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Persona", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(persona, T_Q3_16_4) %>%
+  group_by(persona) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_16_4 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+persona_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_16_4) %>%
+  svychisq(
+    formula = ~ persona + T_Q3_16_4,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+### Promoting Shujaaz
+#### Promoting Shujaaz by location
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Compared to rural, the percentage of fans transforming others lives by promoting Shujaaz is significantly higher in urban areas, p = `r pretty_p_value(6.87e-05)`. 
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q3_12")
+
+by_location <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(location, Q3_12) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(Q3_12 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 4
+
+by_location %>%
+  ggplot(aes(x=location, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Promoting Shujaaz",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Location", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, Q3_12) %>%
+  group_by(location) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(Q3_12 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+location_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, Q3_12) %>%
+  svychisq(
+    formula = ~ location + Q3_12,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+#### Promoting Shujaaz by county
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Transforming the lives of others by promoting Shujaaz varies by county.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q3_12")
+
+by_county <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(county_name, Q3_12) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(Q3_12 == 1) %>%
+full_join(counties) %>%
+ungroup() %>%
+dplyr::mutate(proportion = ifelse(is.na(proportion), 0, proportion)) %>%
+rename(County = county_name) |>
+ungroup() %>%
+arrange(desc(proportion))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Define a function to generate the color based on the value
+color_fill <- function(x) {
+  scales::col_numeric(
+    palette = colorRampPalette(c("white", "lightblue"))(10), 
+    domain = c(0, 1)
+  )(x)
+}
+
+# Create a gt table with dynamic color fill
+create_table <- function(data) {
+data %>%
+select(County, proportion) %>%
+gt() %>%
+data_color(
+columns = c("proportion"),
+method = "numeric",
+palette = "ggsci::red_material",
+domain = c(0,1)
+) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+  fmt_percent(
+    columns = c("proportion"),
+    decimals = 0
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("County")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("County")
+  ) %>%
+cols_label(
+    proportion = "Promote"
+  ) %>%
+  opt_table_font(
+    font = "Arial"
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(1))
+}
+
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(1:16))
+```
+
+</div>
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(17:30))
+```
+
+</div>
+
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(31:47))
+```
+
+</div>
+
+:::
+
+
+
+#### Promoting Shujaaz by persona
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There's no evidence that transforming lives of others by promoting Shujaaz varies by persona (age and sex), p = `r pretty_p_value(0.2235)`.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("Q3_12")
+
+by_persona <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(persona, Q3_12) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(Q3_12 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+by_persona %>%
+  ggplot(aes(x=persona, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Transforming Lives by promoting Shujaaz",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Persona", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(persona, Q3_12) %>%
+  group_by(persona) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(Q3_12 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+persona_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, Q3_12) %>%
+  svychisq(
+    formula = ~ persona + Q3_12,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+### I trust Shujaaz
+#### I trust Shujaaz by location
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Trust in Shujaaz does not significantly vary by location, p = `r pretty_p_value(0.7)`. 
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_11_5")
+
+by_location <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(location, T_Q3_11_5) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_11_5 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 4
+
+by_location %>%
+  ggplot(aes(x=location, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "I trust Shujaaz",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Location", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_11_5) %>%
+  group_by(location) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_11_5 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+location_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_11_5) %>%
+  svychisq(
+    formula = ~ location + T_Q3_11_5,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+#### I trust Shujaaz by county
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Trust in Shujaaz varies by county.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_11_5")
+
+by_county <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(county_name, T_Q3_11_5) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_11_5 == 1) %>%
+full_join(counties) %>%
+ungroup() %>%
+dplyr::mutate(proportion = ifelse(is.na(proportion), 0, proportion)) %>%
+rename(County = county_name) |>
+ungroup() %>%
+arrange(desc(proportion))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Define a function to generate the color based on the value
+color_fill <- function(x) {
+  scales::col_numeric(
+    palette = colorRampPalette(c("white", "lightblue"))(10), 
+    domain = c(0, 1)
+  )(x)
+}
+
+# Create a gt table with dynamic color fill
+create_table <- function(data) {
+data %>%
+select(County, proportion) %>%
+gt() %>%
+data_color(
+columns = c("proportion"),
+method = "numeric",
+palette = "ggsci::red_material",
+domain = c(0,1)
+) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+  fmt_percent(
+    columns = c("proportion"),
+    decimals = 0
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("County")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("County")
+  ) %>%
+cols_label(
+    proportion = "Trust"
+  ) %>%
+  opt_table_font(
+    font = "Arial"
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(1))
+}
+
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(1:16))
+```
+
+</div>
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(17:30))
+```
+
+</div>
+
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(31:47))
+```
+
+</div>
+
+:::
+
+
+
+#### I trust Shujaaz by persona
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There's no evidence that trust in Shujaaz varies by persona (age and sex), p = `r pretty_p_value(0.4549)`.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_11_5")
+
+by_persona <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(persona, T_Q3_11_5) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_11_5 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+by_persona %>%
+  ggplot(aes(x=persona, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Trust in Shujaaz",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Persona", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(persona, T_Q3_11_5) %>%
+  group_by(persona) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_11_5 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+persona_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_11_5) %>%
+  svychisq(
+    formula = ~ persona + T_Q3_11_5,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+
+
+### Application of learning
+#### By location
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Application of learning from Shujaaz does not vary significantly by location, p = `r pretty_p_value(0.1489)`. 
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_16_10")
+
+by_location <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(location, T_Q3_16_10) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_16_10 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 4
+
+by_location %>%
+  ggplot(aes(x=location, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Application of learning",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Location", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_16_10) %>%
+  group_by(location) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_16_10 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+location_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_16_10) %>%
+  svychisq(
+    formula = ~ location + T_Q3_16_10,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+#### By county
+::: {.note}
+<span class="info-icon">ℹ️</span>
+Application of learning from Shujaaz varies by county.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_16_10")
+
+
+
+by_county <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(county_name, T_Q3_16_10) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_16_10 == 1) %>%
+full_join(counties) %>%
+ungroup() %>%
+dplyr::mutate(proportion = ifelse(is.na(proportion), 0, proportion)) %>%
+rename(County = county_name) |>
+ungroup() %>%
+arrange(desc(proportion))
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Define a function to generate the color based on the value
+color_fill <- function(x) {
+  scales::col_numeric(
+    palette = colorRampPalette(c("white", "lightblue"))(10), 
+    domain = c(0, 1)
+  )(x)
+}
+
+# Create a gt table with dynamic color fill
+create_table <- function(data) {
+data %>%
+select(County, proportion) %>%
+gt() %>%
+data_color(
+columns = c("proportion"),
+method = "numeric",
+palette = "ggsci::red_material",
+domain = c(0,1)
+) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "gray", weight = px(1)),
+    locations = cells_body()
+  ) %>%
+  fmt_percent(
+    columns = c("proportion"),
+    decimals = 0
+  ) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold", size = px(16))
+    ),
+    locations = cells_column_labels()
+  ) %>%
+  cols_align(
+    align = "left",
+    columns = c("County")
+  ) %>%
+cols_align(
+    align = "right",
+    columns = -c("County")
+  ) %>%
+cols_label(
+    proportion = "Application"
+  ) %>%
+  opt_table_font(
+    font = "Arial"
+  ) |>
+tab_options(table.width = pct(100), data_row.padding = px(1))
+}
+
+```
+
+
+::: {.flex-container}
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(1:16))
+```
+
+</div>
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(17:30))
+```
+
+</div>
+
+
+<div class="flex-item-33">
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+create_table(by_county |> slice(31:47))
+```
+
+</div>
+
+:::
+
+
+
+#### By persona
+::: {.note}
+<span class="info-icon">ℹ️</span>
+There's no evidence that application of learning varies by persona (age and sex), p = `r pretty_p_value(0.9826)`.
+:::
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 10
+
+# List of variables to process
+variables <- c("T_Q3_16_10")
+
+by_persona <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  group_by(persona, T_Q3_16_10) %>%
+  summarize(proportion = survey_prop(na.rm = TRUE),
+            total = survey_total(na.rm = TRUE)) %>%
+filter(T_Q3_16_10 == 1) %>%
+ungroup()
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-height: 4
+#| fig-width: 6
+
+by_persona %>%
+  ggplot(aes(x=persona, y=proportion)) +
+  geom_bar(stat="identity", position=position_dodge(), fill="#FA0005") +
+  geom_errorbar(aes(ymin=proportion-proportion_se, ymax=proportion+proportion_se), width=0.2, position=position_dodge(0.9)) +
+  geom_text(aes(label=label_percent()(round(proportion, 2))), vjust=5, position=position_dodge(0.9), color = "white") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title = "Application of learning",
+    # subtitle = "Filtered by Specific Criteria",
+    x="Persona", y="Proportion",
+    caption = "Data Source: 2023 Annual Survey"
+  ) +  # Add titles and caption
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style the plot title
+    plot.subtitle = element_text(size = 14, hjust = 0.5),  # Style the plot subtitle
+    plot.caption = element_text(size = 10, face = "italic", hjust = 1)  # Style the plot caption
+  )
+
+
+```
+
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+survey_summary <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(persona, T_Q3_16_10) %>%
+  group_by(persona) %>%
+  summarise(
+    count = unweighted(n()),
+    proportion = survey_mean(T_Q3_16_10 == 1, na.rm = TRUE)
+  )
+
+# test for equality of trust by location 
+persona_test <- survey_design %>%
+  filter(engagement == "Yes") %>%
+  drop_na(location, T_Q3_16_10) %>%
+  svychisq(
+    formula = ~ persona + T_Q3_16_10,
+    design = .,
+    statistic = "Chisq",
+    na.rm = TRUE
+  )
+```
+
+
+
+
+
+
+## Lives Changed
 
 
 ```{r}

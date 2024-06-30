@@ -106,3 +106,8 @@ a {
   box-sizing: border-box;
 }
 
+.flex-item-33 {
+  flex: 0 0 32%; /* Flex-grow: 0, Flex-shrink: 0, Flex-basis: 33% */
+  padding: 30px;
+  box-sizing: border-box;
+}
